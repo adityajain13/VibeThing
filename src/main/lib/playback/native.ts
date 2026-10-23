@@ -143,7 +143,8 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
     trackDuration,
     trackProgress,
     canChangeVolume,
-    canSkip
+    canSkip,
+    canFastForward
   } = data
 
   if (!trackName) {
@@ -162,6 +163,7 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
     shuffle: shuffleState ?? false,
     repeat: repeatStateMap[repeatState ?? 'off'],
     track: {
+      id: data.id ?? `${trackName}::${(artist ?? []).join(',')}`,
       name: trackName,
       artists: artist ?? [],
       album: album ?? '',
@@ -176,6 +178,7 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
   if (canChangeVolume) playbackData.supportedActions.push('volume')
   if (canSkip) playbackData.supportedActions.push('next', 'previous')
   if (data.thumbnail) playbackData.supportedActions.push('image')
+  if (canFastForward && trackDuration) playbackData.supportedActions.push('seek')
 
   return playbackData
 }
@@ -253,6 +256,12 @@ class NativeHandler extends BasePlaybackHandler {
     if (!this.instance) return
 
     await this.instance.previousTrack()
+  }
+
+  async seek(positionMs: number): Promise<void> {
+    if (!this.instance) return
+
+    await this.instance.seekTo(positionMs)
   }
 
   async shuffle(): Promise<void> {

@@ -9,6 +9,7 @@ import native from './native.js'
 import {
   PlaybackData,
   PlaybackHandlerEvents,
+  QueueItem,
   RepeatMode
 } from '../../types/Playback.js'
 import { log } from '../utils.js'
@@ -130,6 +131,27 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
   async getImage(): Promise<Buffer | null> {
     if (!this.currentHandler) return null
     return this.currentHandler.getImage()
+  }
+
+  async seek(positionMs: number): Promise<void> {
+    if (!this.currentHandler) return
+    return this.currentHandler.seek(Math.max(0, Math.round(positionMs)))
+  }
+
+  async getQueue(): Promise<QueueItem[]> {
+    if (!this.currentHandler) return []
+    return this.currentHandler.getQueue()
+  }
+
+  async setLiked(liked: boolean): Promise<boolean> {
+    if (!this.currentHandler) return false
+    return this.currentHandler.setLiked(liked)
+  }
+
+  /** Re-emit current playback state, e.g. after a change the source won't report */
+  async refresh(): Promise<void> {
+    if (!this.currentHandler) return
+    this.emit('playback', await this.currentHandler.getPlayback())
   }
 }
 

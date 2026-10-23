@@ -9,6 +9,9 @@ export type Action =
   | 'repeat'
   | 'volume'
   | 'image'
+  | 'seek'
+  | 'queue'
+  | 'like'
 
 export type PlaybackData = {
   isPlaying: boolean
@@ -16,6 +19,9 @@ export type PlaybackData = {
   shuffle: boolean
   repeat: RepeatMode
   track: {
+    /** Stable identifier for the item, e.g. a Spotify URI */
+    id?: string
+    liked?: boolean
     name: string
     artists: string[]
     album: string
@@ -33,4 +39,10 @@ export type PlaybackHandlerEvents = {
   open: (handlerName?: string) => void
   close: () => void
   error: (err: Error) => void
+}
+
+export interface QueueItem {
+  name: string
+  artists: string[]
+  image?: string
 }

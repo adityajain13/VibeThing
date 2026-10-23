@@ -16,7 +16,7 @@ export const setup: SetupFunction = async () => {
     if (!wss) return
 
     wss.clients.forEach(async (ws: AuthenticatedWebSocket) => {
-      if (!ws.authenticated && ws.readyState !== WebSocket.OPEN) return
+      if (!ws.authenticated || ws.readyState !== WebSocket.OPEN) return
 
       ws.send(JSON.stringify({ type: 'playback', data }))
     })

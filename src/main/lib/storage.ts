@@ -18,6 +18,12 @@ import { updateTime } from './time.js'
 
 let storage = {}
 
+// Lazily imported to avoid circular imports at module load time
+async function broadcastConfig() {
+  const { buildConfigMessage } = await import('./handlers/config.js')
+  serverManager.broadcast('config', buildConfigMessage())
+}
+
 const storageValueHandlers: Record<string, (value: unknown) => void> = {
   launchOnStartup: async value => {
     app.setLoginItemSettings({
@@ -33,6 +39,20 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
     await setBrightnessSmooth(null, value as number)
   },
   logLevel: async value => setLogLevel(value as LogLevel),
+  clientConfig: broadcastConfig,
+  macros: broadcastConfig,
+  weatherLocation: async () => {
+    const { invalidateWeather } = await import('./widgets/weather.js')
+    invalidateWeather()
+  },
+  weatherUnits: async () => {
+    const { invalidateWeather } = await import('./widgets/weather.js')
+    invalidateWeather()
+  },
+  calendars: async () => {
+    const { invalidateCalendar } = await import('./widgets/calendar.js')
+    invalidateCalendar()
+  },
   port: async p => {
     const newPort = p as number | null
     const info = serverManager.getServerInfo()

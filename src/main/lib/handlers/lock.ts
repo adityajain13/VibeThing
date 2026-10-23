@@ -9,9 +9,10 @@ export const name = 'lock'
 export const hasActions = false
 
 export const handle: HandlerFunction = async () => {
-  const { cmd, shell } = getLockPlatformCommand()
+  const parsed = getLockPlatformCommand()
+  if (!parsed) return
 
-  exec(cmd, {
-    shell
+  exec(parsed.cmd, {
+    shell: parsed.shell
   })
 }

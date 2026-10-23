@@ -1,7 +1,5 @@
-import { exec } from 'child_process'
-
 import { getShortcutImage, getShortcuts } from '../shortcuts.js'
-import { getParsedPlatformCommand } from '../utils.js'
+import { openShortcut } from '../macros.js'
 
 import {
   HandlerAction,
@@ -16,15 +14,7 @@ export const actions: HandlerAction[] = [
   {
     action: 'open',
     handle: async (_, data) => {
-      const shortcuts = getShortcuts()
-      const app = shortcuts.find(app => app.id === data)
-      if (app) {
-        const { cmd, shell } = getParsedPlatformCommand(app.command)
-
-        exec(cmd, {
-          shell
-        })
-      }
+      openShortcut(data as string)
     }
   },
   {
