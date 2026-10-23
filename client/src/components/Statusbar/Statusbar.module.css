@@ -1,16 +1,47 @@
 .statusbar {
   display: flex;
-  background: #111;
-  padding: 8px 12px;
-}
-
-.timedate {
-  display: flex;
   align-items: center;
+  height: 44px;
+  padding: 0 18px;
+  flex-shrink: 0;
 }
 
 .time {
   font-weight: 700;
-  font-size: 1.2em;
-  margin-right: 15px;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.date {
+  font-size: 17px;
+  color: var(--muted);
+  margin-left: 12px;
+  font-weight: 500;
+}
+
+.pages {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+.page {
+  all: unset;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--faint);
+  padding: 6px 12px;
+  border-radius: 999px;
+  margin-left: 2px;
+  transition: color 200ms ease, background-color 200ms ease;
+}
+
+.page[data-active='true'] {
+  color: var(--text);
+  background: var(--panel-hi);
+}
+
+.offline {
+  margin-left: 12px;
+  color: var(--danger);
 }

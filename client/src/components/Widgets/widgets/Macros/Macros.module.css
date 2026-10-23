@@ -1,0 +1,71 @@
+.macros {
+  padding: 10px;
+}
+
+.grid {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+}
+
+.macro {
+  all: unset;
+  width: 104px;
+  margin: 4px;
+  padding: 10px 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid transparent;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 120ms ease;
+}
+
+.macro:active {
+  transform: scale(0.94);
+}
+
+.macro[data-selected='true'] {
+  background: var(--panel-hi);
+}
+
+.macro[data-result='ok'] {
+  border-color: var(--accent);
+}
+
+.macro[data-result='fail'] {
+  border-color: var(--danger);
+}
+
+.macro span {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: #fff;
+}
+
+.macro p {
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 7px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.empty {
+  margin: auto;
+  color: var(--muted);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 20px;
+}

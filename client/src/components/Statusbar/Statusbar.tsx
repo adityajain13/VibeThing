@@ -1,40 +1,39 @@
-import { useContext, useEffect, useState } from 'react'
+import { useContext } from 'react'
 
+import { ConfigContext } from '@/contexts/ConfigContext.tsx'
 import { SocketContext } from '@/contexts/SocketContext.tsx'
+import { UIContext } from '@/contexts/UIContext.tsx'
+
+import { useServerTime } from '@/lib/useServerTime.ts'
 
 import styles from './Statusbar.module.css'
 
 const Statusbar: React.FC = () => {
-  const { ready, socket } = useContext(SocketContext)
-
-  const [time, setTime] = useState<string | null>(null)
-  const [date, setDate] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (ready === true && socket) {
-      const listener = (e: MessageEvent) => {
-        const { type, data } = JSON.parse(e.data)
-        if (type !== 'time') return
-        setTime(data.time)
-        setDate(data.date)
-      }
-
-      socket.addEventListener('message', listener)
-
-      socket.send(JSON.stringify({ type: 'time' }))
-
-      return () => {
-        socket.removeEventListener('message', listener)
-      }
-    }
-  }, [ready, socket])
+  const { ready } = useContext(SocketContext)
+  const { screens } = useContext(ConfigContext)
+  const { screen, setScreen } = useContext(UIContext)
+  const time = useServerTime()
 
   return (
     <div className={styles.statusbar}>
-      <div className={styles.timedate}>
-        <div className={styles.time}>{time}</div>
-        <div className={styles.date}>{date}</div>
-      </div>
+      <div className={`${styles.time} tnum`}>{time?.time}</div>
+      <div className={styles.date}>{time?.date}</div>
+      {screens.length > 1 && (
+        <div className={styles.pages}>
+          {screens.map((s, i) => (
+            <button
+              key={s.id}
+              className={styles.page}
+              data-active={i === screen}
+              onClick={() => setScreen(i)}
+              tabIndex={-1}
+            >
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {!ready && <span className={`material-icons ${styles.offline}`}>link_off</span>}
     </div>
   )
 }

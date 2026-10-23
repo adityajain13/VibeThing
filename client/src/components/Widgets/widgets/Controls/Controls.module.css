@@ -20,18 +20,18 @@
 }
 
 .control:focus {
-  border-color: rgba(0, 100, 255, 0.5);
+  border-color: var(--accent);
 }
 
 .control span {
-  background: #444;
+  background: var(--panel-hi);
   padding: 15px;
   border-radius: 50%;
   font-size: 2rem;
 }
 
 .control[data-type='lock'] span {
-  background: rgb(255, 50, 50);
+  background: var(--danger);
 }
 
 .control[data-type='power'] span {

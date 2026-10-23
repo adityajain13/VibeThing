@@ -1,0 +1,120 @@
+.system {
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+
+.loading {
+  margin: auto;
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.cpu {
+  display: flex;
+  align-items: flex-end;
+}
+
+.cpuLabel {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cpuValue {
+  font-size: 58px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.cpuValue span {
+  font-size: 26px;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.sub {
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.spark {
+  flex: 1;
+  height: 64px;
+  margin-left: 20px;
+}
+
+.area {
+  fill: rgba(var(--accent-rgb), 0.16);
+}
+
+.line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.meter {
+  margin-top: 12px;
+}
+
+.meterHead {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.meterLabel {
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px;
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--panel-hi);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--accent);
+  transition: width 600ms ease;
+}
+
+.net {
+  display: flex;
+  margin-top: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.net > span {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.net .material-icons {
+  font-size: 18px;
+  margin-right: 4px;
+  color: var(--text);
+}
+
+[data-h='short'] .meter,
+[data-h='short'] .net {
+  display: none;
+}

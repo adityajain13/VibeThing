@@ -1,18 +1,41 @@
 .widget {
   flex: 1;
-  margin: 5px;
-  border-radius: 20px;
-  background: #111;
+  min-height: 0;
+  min-width: 0;
+  margin: 4px;
+  border-radius: var(--radius);
+  background: var(--panel);
   display: flex;
-  border: 2px solid transparent;
-  outline: none;
-  transition: 200ms ease;
+  position: relative;
+  overflow: hidden;
 }
 
-.widget:focus-within {
-  border-color: rgba(0, 100, 255, 0.5);
+.widget[data-bare='true'] {
+  background: transparent;
 }
 
-.widget > div {
+/* focus ring sits above content so it's visible on full-bleed widgets */
+.widget::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: var(--radius);
+  border: 3px solid transparent;
+  pointer-events: none;
+  transition: border-color 150ms ease;
+}
+
+.widget:focus-within::after {
+  border-color: var(--accent);
+}
+
+.inner {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   outline: none;
+  display: flex;
 }

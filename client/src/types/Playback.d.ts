@@ -9,6 +9,9 @@ export type Action =
   | 'repeat'
   | 'volume'
   | 'image'
+  | 'seek'
+  | 'queue'
+  | 'like'
 
 export interface PlaybackData {
   isPlaying: boolean
@@ -16,6 +19,8 @@ export interface PlaybackData {
   shuffle: boolean
   repeat: RepeatMode
   track: {
+    id?: string
+    liked?: boolean
     name: string
     artists: string[]
     album: string
@@ -25,4 +30,22 @@ export interface PlaybackData {
     }
   }
   supportedActions: Action[]
+}
+
+export interface QueueItem {
+  name: string
+  artists: string[]
+  image?: string
+}
+
+export interface LyricLine {
+  t: number
+  text: string
+}
+
+export interface Lyrics {
+  key: string
+  synced: LyricLine[] | null
+  plain: string | null
+  instrumental: boolean
 }

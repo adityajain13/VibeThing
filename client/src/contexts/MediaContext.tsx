@@ -7,194 +7,270 @@ import React, {
 } from 'react'
 
 import { SocketContext } from './SocketContext.tsx'
+import { ConfigContext } from './ConfigContext.tsx'
 
-import { PlaybackData, RepeatMode } from '@/types/Playback.js'
+import { applyAccent, extractAccent, FALLBACK_ACCENT, hexToRgb } from '@/lib/accent.ts'
+
+import { Action, Lyrics, PlaybackData, QueueItem, RepeatMode } from '@/types/Playback.js'
 
 interface MediaContextProps {
   image: string | null
   playerData: PlaybackData | null
   playerDataRef: React.MutableRefObject<PlaybackData | null>
+  /** Wall-clock time the current position was reported, for local ticking */
+  anchorRef: React.MutableRefObject<number>
+  lyrics: Lyrics | null
+  queue: QueueItem[] | null
+  volume: number
+  volumeChangedAt: number
+  supports: (action: Action) => boolean
   actions: {
     playPause: () => void
     skipForward: () => void
     skipBackward: () => void
     setVolume: (volume: number) => void
+    changeVolume: (direction: 1 | -1) => void
     shuffle: (state: boolean) => void
     repeat: (state: RepeatMode) => void
+    seek: (positionMs: number) => void
+    seekBy: (deltaMs: number) => void
+    toggleLike: () => void
+    requestQueue: () => void
   }
 }
+
+const noop = () => {}
 
 const MediaContext = createContext<MediaContextProps>({
   image: null,
   playerData: null,
   playerDataRef: { current: null },
+  anchorRef: { current: 0 },
+  lyrics: null,
+  queue: null,
+  volume: 0,
+  volumeChangedAt: 0,
+  supports: () => false,
   actions: {
-    playPause: () => {},
-    skipForward: () => {},
-    skipBackward: () => {},
-    setVolume: () => {},
-    shuffle: () => {},
-    repeat: () => {}
+    playPause: noop,
+    skipForward: noop,
+    skipBackward: noop,
+    setVolume: noop,
+    changeVolume: noop,
+    shuffle: noop,
+    repeat: noop,
+    seek: noop,
+    seekBy: noop,
+    toggleLike: noop,
+    requestQueue: noop
   }
 })
 
-interface MediaContextProviderProps {
-  children: React.ReactNode
+function trackKey(d: PlaybackData | null) {
+  if (!d) return null
+  return d.track.id ?? `${d.track.name}::${d.track.artists.join(',')}`
 }
 
-const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
-  const { ready, socket } = useContext(SocketContext)
+export function currentPosition(
+  data: PlaybackData | null,
+  anchor: number
+): number {
+  if (!data) return 0
+  const { current, total } = data.track.duration
+  if (!data.isPlaying) return current
+  return Math.min(total, current + (Date.now() - anchor))
+}
 
-  const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
+const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
+  const { ready, socket } = useContext(SocketContext)
+  const config = useContext(ConfigContext)
+
+  const [playerData, setPlayerDataState] = useState<PlaybackData | null>(null)
   const playerDataRef = useRef<PlaybackData | null>(null)
+  const anchorRef = useRef(Date.now())
   const [image, setImage] = useState<string | null>(null)
+  const [lyrics, setLyrics] = useState<Lyrics | null>(null)
+  const [queue, setQueue] = useState<QueueItem[] | null>(null)
+
+  const [volume, setVolumeState] = useState(0)
+  const volumeRef = useRef(0)
+  const [volumeChangedAt, setVolumeChangedAt] = useState(0)
+  const lastLocalVolume = useRef(0)
+  const volumeSendTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Ignore stale server echoes for a moment after an optimistic change
+  const lockUntil = useRef(0)
+
+  function setPlayerData(d: PlaybackData | null) {
+    playerDataRef.current = d
+    anchorRef.current = Date.now()
+    setPlayerDataState(d)
+  }
+
+  function send(msg: object) {
+    socket?.send(JSON.stringify(msg))
+  }
 
   useEffect(() => {
-    if (ready === true && socket) {
-      const listener = (e: MessageEvent) => {
-        const { type, action, data } = JSON.parse(e.data)
-        if (type !== 'playback') return
-        const playbackData = data as PlaybackData
+    if (ready !== true || !socket) return
 
-        if (action === 'image') {
-          if (!data) return setImage(null)
-          setImage(`data:image/png;base64,${data}`)
-        } else {
-          if (!data) return setPlayerData(null)
-          setPlayerData(playbackData)
+    const listener = (e: MessageEvent) => {
+      const { type, action, data } = JSON.parse(e.data)
 
-          if (
-            playerDataRef.current?.track.name !== playbackData.track.name
-          ) {
-            socket.send(
-              JSON.stringify({ type: 'playback', action: 'image' })
-            )
-          }
-        }
+      if (type === 'lyrics') {
+        setLyrics(data)
+        return
+      }
+      if (type !== 'playback') return
+
+      if (action === 'image') {
+        setImage(data ? `data:image/png;base64,${data}` : null)
+        return
+      }
+      if (action === 'queue') {
+        setQueue(Array.isArray(data) ? data : [])
+        return
+      }
+      if (action) return
+
+      const next = data as PlaybackData | null
+      const prevKey = trackKey(playerDataRef.current)
+
+      if (!next) {
+        setPlayerData(null)
+        return
       }
 
-      socket.addEventListener('message', listener)
+      if (Date.now() < lockUntil.current && trackKey(next) === prevKey) {
+        // keep optimistic play state but accept a fresh position
+        next.isPlaying = playerDataRef.current?.isPlaying ?? next.isPlaying
+      }
 
-      socket.send(JSON.stringify({ type: 'playback' }))
+      setPlayerData(next)
 
-      return () => {
-        socket.removeEventListener('message', listener)
+      if (Date.now() - lastLocalVolume.current > 1500) {
+        volumeRef.current = next.volume
+        setVolumeState(next.volume)
+      }
+
+      if (trackKey(next) !== prevKey) {
+        setLyrics(null)
+        send({ type: 'playback', action: 'image' })
+        send({ type: 'lyrics' })
       }
     }
+
+    socket.addEventListener('message', listener)
+    send({ type: 'playback' })
+
+    return () => socket.removeEventListener('message', listener)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, socket])
 
+  // Accent colour follows the album art unless a fixed colour is configured
   useEffect(() => {
-    if (!playerData?.isPlaying) return
-
-    const interval = setInterval(() => {
-      setPlayerData(p => ({
-        ...p!,
-        track: {
-          ...p!.track,
-          duration: {
-            ...p!.track.duration,
-            current: p!.track.duration.current + 200
-          }
-        }
-      }))
-    }, 200)
-
-    return () => {
-      clearInterval(interval)
+    let cancelled = false
+    const fixed = config.accent !== 'album' ? hexToRgb(config.accent) : null
+    if (fixed) {
+      applyAccent(fixed)
+      return
     }
-  }, [playerData])
+    if (!image) {
+      applyAccent(FALLBACK_ACCENT)
+      return
+    }
+    extractAccent(image).then(rgb => {
+      if (!cancelled) applyAccent(rgb ?? FALLBACK_ACCENT)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [image, config.accent])
 
-  useEffect(() => {
-    playerDataRef.current = playerData
-  }, [playerData])
+  const supports = (action: Action) =>
+    Boolean(playerDataRef.current?.supportedActions.includes(action))
 
-  const actions = {
+  function patch(p: Partial<PlaybackData>) {
+    const cur = playerDataRef.current
+    if (!cur) return
+    // re-anchor position so the progress bar doesn't jump
+    const position = currentPosition(cur, anchorRef.current)
+    setPlayerData({
+      ...cur,
+      ...p,
+      track: {
+        ...cur.track,
+        ...(p.track ?? {}),
+        duration: { ...cur.track.duration, current: p.track?.duration?.current ?? position }
+      }
+    })
+  }
+
+  function seek(positionMs: number) {
+    const cur = playerDataRef.current
+    if (!cur || !supports('seek')) return
+    const pos = Math.max(0, Math.min(cur.track.duration.total - 500, positionMs))
+    send({ type: 'playback', action: 'seek', data: { position: pos } })
+    patch({ track: { ...cur.track, duration: { ...cur.track.duration, current: pos } } })
+  }
+
+  function setVolume(v: number) {
+    if (!supports('volume')) return
+    const clamped = Math.max(0, Math.min(100, Math.round(v)))
+    volumeRef.current = clamped
+    setVolumeState(clamped)
+    lastLocalVolume.current = Date.now()
+    setVolumeChangedAt(Date.now())
+    // knob spins fire many events; send the latest value at most every 120ms
+    if (volumeSendTimer.current) return
+    volumeSendTimer.current = setTimeout(() => {
+      volumeSendTimer.current = null
+      send({ type: 'playback', action: 'volume', data: { volume: volumeRef.current } })
+    }, 120)
+  }
+
+  const actions: MediaContextProps['actions'] = {
     playPause: () => {
-      if (playerDataRef.current === null) return
-
-      socket?.send(
-        JSON.stringify({
-          type: 'playback',
-          action: playerDataRef.current?.isPlaying ? 'pause' : 'play'
-        })
-      )
-      setPlayerData({
-        ...playerDataRef.current!,
-        isPlaying: !playerDataRef.current?.isPlaying
-      })
+      const cur = playerDataRef.current
+      if (!cur) return
+      send({ type: 'playback', action: cur.isPlaying ? 'pause' : 'play' })
+      lockUntil.current = Date.now() + 1500
+      patch({ isPlaying: !cur.isPlaying })
     },
     skipForward: () => {
-      if (playerDataRef.current === null) return
-
-      socket?.send(
-        JSON.stringify({
-          type: 'playback',
-          action: 'next'
-        })
-      )
+      if (!playerDataRef.current) return
+      send({ type: 'playback', action: 'next' })
     },
     skipBackward: () => {
-      if (playerDataRef.current === null) return
-
-      socket?.send(
-        JSON.stringify({
-          type: 'playback',
-          action: 'previous'
-        })
-      )
+      if (!playerDataRef.current) return
+      send({ type: 'playback', action: 'previous' })
     },
-    setVolume: (volume: number) => {
-      if (playerDataRef.current === null) return
-
-      socket?.send(
-        JSON.stringify({
-          type: 'playback',
-          action: 'volume',
-          data: {
-            volume
-          }
-        })
-      )
-
-      setPlayerData({
-        ...playerDataRef.current!,
-        volume: volume
-      })
+    setVolume,
+    changeVolume: direction =>
+      setVolume(volumeRef.current + direction * config.volumeStep),
+    shuffle: state => {
+      if (!playerDataRef.current) return
+      send({ type: 'playback', action: 'shuffle', data: { state } })
+      patch({ shuffle: state })
     },
-    shuffle: (state: boolean) => {
-      if (playerDataRef.current === null) return
-      socket?.send(
-        JSON.stringify({
-          type: 'playback',
-          action: 'shuffle',
-          data: {
-            state
-          }
-        })
-      )
-
-      setPlayerData({
-        ...playerDataRef.current!,
-        shuffle: state
-      })
+    repeat: state => {
+      if (!playerDataRef.current) return
+      send({ type: 'playback', action: 'repeat', data: { state } })
+      patch({ repeat: state })
     },
-    repeat: (state: RepeatMode) => {
-      if (playerDataRef.current === null) return
-
-      socket?.send(
-        JSON.stringify({
-          type: 'playback',
-          action: 'repeat',
-          data: {
-            state
-          }
-        })
-      )
-
-      setPlayerData({
-        ...playerDataRef.current!,
-        repeat: state as RepeatMode
-      })
+    seek,
+    seekBy: delta =>
+      seek(currentPosition(playerDataRef.current, anchorRef.current) + delta),
+    toggleLike: () => {
+      const cur = playerDataRef.current
+      if (!cur || !supports('like')) return
+      const liked = !cur.track.liked
+      send({ type: 'playback', action: 'like', data: { state: liked } })
+      patch({ track: { ...cur.track, liked } })
+    },
+    requestQueue: () => {
+      if (!supports('queue')) return setQueue([])
+      send({ type: 'playback', action: 'queue' })
     }
   }
 
@@ -204,12 +280,55 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
         image,
         playerData,
         playerDataRef,
+        anchorRef,
+        lyrics,
+        queue,
+        volume,
+        volumeChangedAt,
+        supports,
         actions
       }}
     >
       {children}
     </MediaContext.Provider>
   )
+}
+
+/** Current playback position, ticking locally without touching global state */
+export function usePosition(intervalMs = 250) {
+  const { playerData, anchorRef } = useContext(MediaContext)
+  const [pos, setPos] = useState(() => currentPosition(playerData, anchorRef.current))
+
+  useEffect(() => {
+    setPos(currentPosition(playerData, anchorRef.current))
+    if (!playerData?.isPlaying) return
+    const t = setInterval(
+      () => setPos(currentPosition(playerData, anchorRef.current)),
+      intervalMs
+    )
+    return () => clearInterval(t)
+  }, [playerData, anchorRef, intervalMs])
+
+  return pos
+}
+
+/** Index of the active synced lyric line */
+export function activeLyricIndex(lyrics: Lyrics | null, positionMs: number) {
+  const lines = lyrics?.synced
+  if (!lines || lines.length === 0) return -1
+  let lo = 0
+  let hi = lines.length - 1
+  let ans = -1
+  // small lead so the line appears as it's sung, not after
+  const p = positionMs + 250
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1
+    if (lines[mid].t <= p) {
+      ans = mid
+      lo = mid + 1
+    } else hi = mid - 1
+  }
+  return ans
 }
 
 export { MediaContext, MediaContextProvider }

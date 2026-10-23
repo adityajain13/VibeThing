@@ -1,0 +1,32 @@
+.clock {
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.time {
+  font-size: 84px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.date {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 8px;
+}
+
+[data-h='short'] .time {
+  font-size: 64px;
+}
+
+[data-h='short'] .date {
+  font-size: 18px;
+  margin-top: 4px;
+}
+
+[data-w='narrow'] .time {
+  font-size: 54px;
+}
