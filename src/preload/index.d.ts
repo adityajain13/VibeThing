@@ -87,6 +87,7 @@ declare global {
       exportSettings: () => Promise<
         { ok: true; path: string; count: number } | { ok: false; canceled?: boolean; error?: string }
       >
+      getPreviewConnection: () => Promise<{ port: number; password: string } | null>
       importSettings: () => Promise<
         { ok: true; count: number } | { ok: false; canceled?: boolean; error?: string }
       >

@@ -115,8 +115,15 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
     .filter(s => s.columns.length)
   const target = previewTarget(group, cleanScreens, fsView)
 
+  // live data from our own server when it's running; sample data otherwise
+  const [frameSrc, setFrameSrc] = useState(PREVIEW_URL)
   useEffect(() => {
-    window.api.hasPreviewClient().then(setAvailable).catch(() => setAvailable(false))
+    Promise.all([window.api.hasPreviewClient(), window.api.getPreviewConnection().catch(() => null)])
+      .then(([has, conn]) => {
+        if (conn) setFrameSrc(`${PREVIEW_URL}#port=${conn.port}&pw=${encodeURIComponent(conn.password)}`)
+        setAvailable(has)
+      })
+      .catch(() => setAvailable(false))
   }, [])
 
   useEffect(() => {
@@ -227,7 +234,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
             ) : available ? (
               <iframe
                 ref={frameRef}
-                src={PREVIEW_URL}
+                src={frameSrc}
                 title="CarThing preview"
                 width={800}
                 height={480}
@@ -238,7 +245,9 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
           <p className={styles.help}>
             {!onScreen
               ? `${group.label} isn’t on any screen yet, so it’s shown on its own. Add it in Screens.`
-              : 'The real CarThing interface with sample data. Changes go to your CarThing as you make them.'}
+              : frameSrc !== PREVIEW_URL
+                ? 'Live: your music, calendar and weather (taps here don’t control anything). Sample song when nothing’s playing.'
+                : 'The real CarThing interface with sample data. Changes go to your CarThing as you make them.'}
           </p>
         </section>
 

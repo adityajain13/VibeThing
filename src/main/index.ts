@@ -26,7 +26,8 @@ import {
   getStorageValue,
   loadStorage,
   setPlaybackHandlerConfig,
-  setStorageValue
+  setStorageValue,
+  getSocketPassword
 } from './lib/storage.js'
 import {
   clearLogs,
@@ -287,7 +288,8 @@ enum IPCHandler {
   GetMacros = 'getMacros',
   HasPreviewClient = 'hasPreviewClient',
   ExportSettings = 'exportSettings',
-  ImportSettings = 'importSettings'
+  ImportSettings = 'importSettings',
+  GetPreviewConnection = 'getPreviewConnection'
 }
 
 async function setupIpcHandlers() {
@@ -571,6 +573,13 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.ExportSettings, () => exportSettings())
 
   ipcMain.handle(IPCHandler.ImportSettings, () => importSettings())
+
+  // lets the Customize preview read live data from our own server (read-only)
+  ipcMain.handle(IPCHandler.GetPreviewConnection, () => {
+    const info = serverManager.getServerInfo()
+    if (!info.running || !info.port) return null
+    return { port: info.port, password: getSocketPassword() }
+  })
 }
 
 async function setupTray() {

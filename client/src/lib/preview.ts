@@ -67,6 +67,16 @@ export class PreviewSocket {
     volume: 62
   }
 
+  /**
+   * Live data: when the desktop app passes its server port + password in the
+   * URL hash, connect to it as a read-only guest. Anything that would change
+   * state on the PC is dropped, and config always comes from the parent so
+   * unsaved edits show. With nothing playing, the sample song stands in.
+   */
+  private real: WebSocket | null = null
+  private realReady = false
+  private sample = true
+
   constructor() {
     window.addEventListener('message', e => {
       const msg = e.data as PreviewMessage
@@ -74,7 +84,71 @@ export class PreviewSocket {
       this.config = msg.config
       this.emit({ type: 'config', data: msg.config })
     })
+    this.connectReal()
     setTimeout(() => this.onopen?.(), 0)
+  }
+
+  private connectReal() {
+    const hash = new URLSearchParams(location.hash.slice(1))
+    const port = hash.get('port')
+    const pw = hash.get('pw')
+    if (!port) return
+    try {
+      const ws = new WebSocket(`ws://localhost:${port}`)
+      ws.onopen = () => {
+        if (pw) ws.send(JSON.stringify({ type: 'auth', data: pw }))
+        this.realReady = true
+        this.real = ws
+        // refresh everything from the real source
+        ws.send(JSON.stringify({ type: 'playback' }))
+        ws.send(JSON.stringify({ type: 'apps' }))
+        ws.send(JSON.stringify({ type: 'time' }))
+      }
+      ws.onmessage = e => this.fromReal(e.data as string)
+      ws.onclose = () => {
+        this.realReady = false
+        this.real = null
+        this.toSample()
+      }
+    } catch {
+      /* stay on sample data */
+    }
+  }
+
+  private static DROP_IN = ['config', 'version', 'sleep', 'wake', 'screensaver', 'restore', 'update', 'auth', 'error', 'pong']
+
+  private fromReal(raw: string) {
+    let msg: { type: string; action?: string; data?: unknown }
+    try {
+      msg = JSON.parse(raw)
+    } catch {
+      return
+    }
+    if (PreviewSocket.DROP_IN.includes(msg.type)) return
+    if (msg.type === 'playback' && !msg.action) {
+      if (!msg.data) return this.toSample()
+      this.sample = false
+    }
+    // while showing the sample song, ignore real art/lyrics/queue answers
+    if (this.sample && (msg.type === 'lyrics' || (msg.type === 'playback' && msg.action))) return
+    const e = new MessageEvent('message', { data: raw })
+    this.listeners.forEach(l => l(e))
+  }
+
+  private toSample() {
+    if (this.sample && this.cover) return
+    this.sample = true
+    this.emit({ type: 'playback', data: this.playback() })
+  }
+
+  /** requests that only read data; everything else stays inside the preview */
+  private forwardable(type: string, action?: string) {
+    if (type === 'time' || type === 'subscribe') return true
+    if (type === 'apps') return !action || action === 'image'
+    if (this.sample) return false
+    if (type === 'lyrics') return true
+    if (type === 'playback') return !action || action === 'image' || action === 'queue'
+    return false
   }
 
   addEventListener(_type: 'message', l: Listener) {
@@ -113,6 +187,9 @@ export class PreviewSocket {
 
   send(raw: string) {
     const { type, action, data } = JSON.parse(raw)
+    if (this.realReady && this.real && this.forwardable(type, action)) return this.real.send(raw)
+    // playback controls never reach the PC from the preview
+    if (!this.sample && type === 'playback' && action) return
     switch (type) {
       case 'ping':
         return this.emit({ type: 'pong' })
