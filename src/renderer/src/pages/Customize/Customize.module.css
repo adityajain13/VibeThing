@@ -1321,3 +1321,37 @@
   border: 1px solid var(--line);
   color-scheme: dark;
 }
+
+.helpStep {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+  margin-left: 18px;
+  list-style: decimal;
+}
+
+.helpStep b {
+  color: #ddd;
+  font-weight: 600;
+}
+
+.okNote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ok);
+}
+
+.okNote :global(.material-icons) {
+  font-size: 16px;
+}
+
+.customize input[type='password'] {
+  font-size: 13.5px;
+  padding: 7px 9px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-width: 0;
+}

@@ -83,6 +83,7 @@ import { serverManager } from './lib/server.js'
 import { migrateFromGlanceThing } from './lib/migrate.js'
 import { getLocalClientDir } from './lib/webapp.js'
 import { exportSettings, importSettings } from './lib/backup.js'
+import { getVlcSettings, testVlc } from './lib/playback/vlc.js'
 import { geocode } from './lib/widgets/weather.js'
 import { listMixerTargets } from './lib/widgets/mixer.js'
 import { runMacroDefinition } from './lib/macros.js'
@@ -289,7 +290,10 @@ enum IPCHandler {
   HasPreviewClient = 'hasPreviewClient',
   ExportSettings = 'exportSettings',
   ImportSettings = 'importSettings',
-  GetPreviewConnection = 'getPreviewConnection'
+  GetPreviewConnection = 'getPreviewConnection',
+  GetVlcSettings = 'getVlcSettings',
+  SaveVlcSettings = 'saveVlcSettings',
+  TestVlc = 'testVlc'
 }
 
 async function setupIpcHandlers() {
@@ -573,6 +577,21 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.ExportSettings, () => exportSettings())
 
   ipcMain.handle(IPCHandler.ImportSettings, () => importSettings())
+
+  ipcMain.handle(IPCHandler.GetVlcSettings, () => ({
+    ...getVlcSettings(),
+    hasPassword: !!getStorageValue('vlcPassword')
+  }))
+
+  ipcMain.handle(IPCHandler.SaveVlcSettings, (_e, s: { enabled: boolean; port: number; password?: string }) => {
+    setStorageValue('vlc', { enabled: !!s.enabled, port: Number(s.port) || 8080 })
+    if (typeof s.password === 'string') setStorageValue('vlcPassword', s.password, true)
+    return true
+  })
+
+  ipcMain.handle(IPCHandler.TestVlc, (_e, s: { port: number; password?: string }) =>
+    testVlc(Number(s.port) || 8080, typeof s.password === 'string' ? s.password : ((getStorageValue('vlcPassword', true) as string) ?? ''))
+  )
 
   // lets the Customize preview read live data from our own server (read-only)
   ipcMain.handle(IPCHandler.GetPreviewConnection, () => {

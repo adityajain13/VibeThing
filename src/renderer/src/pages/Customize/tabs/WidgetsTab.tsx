@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 
+import Switch from '@/components/Switch/Switch.js'
+
 import type { WeatherLocation } from '@/types/Config.js'
 
 import styles from '../Customize.module.css'
@@ -11,6 +13,105 @@ interface CalendarSource {
 }
 
 const CAL_COLORS = ['#4f8cff', '#ff7a59', '#2ec27e', '#c061cb', '#f5c211']
+
+const VlcCard: React.FC = () => {
+  const [enabled, setEnabled] = useState(false)
+  const [port, setPort] = useState('8080')
+  const [password, setPassword] = useState('')
+  const [hasPassword, setHasPassword] = useState(false)
+  const [status, setStatus] = useState<'ok' | 'auth' | 'offline' | 'testing' | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    window.api.getVlcSettings().then(s => {
+      setEnabled(s.enabled)
+      setPort(String(s.port))
+      setHasPassword(s.hasPassword)
+      setLoaded(true)
+    })
+  }, [])
+
+  function save(patch: { enabled?: boolean; port?: string; password?: string }) {
+    const next = { enabled: patch.enabled ?? enabled, port: Number(patch.port ?? port) || 8080 }
+    window.api.saveVlcSettings({ ...next, ...(patch.password !== undefined ? { password: patch.password } : {}) })
+    if (patch.password !== undefined) setHasPassword(patch.password.length > 0)
+  }
+
+  async function test() {
+    setStatus('testing')
+    const res = await window.api.testVlc({ port: Number(port) || 8080, ...(password ? { password } : {}) })
+    if (password) save({ password })
+    setStatus(res)
+  }
+
+  if (!loaded) return null
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.field}>
+        <h3>
+          <span className="material-icons">smart_display</span>VLC
+        </h3>
+        <Switch
+          value={enabled}
+          onChange={v => {
+            setEnabled(v)
+            save({ enabled: v })
+          }}
+        />
+      </div>
+      <p className={styles.help}>
+        Reads VLC directly, no plugin needed. While VLC is playing it takes over
+        Now playing, with seek, volume, shuffle and repeat.
+      </p>
+      <div className={styles.dimmable} data-off={!enabled}>
+        <ol className={styles.steps}>
+          <li className={styles.helpStep}>
+            In VLC: <b>Tools → Preferences</b>, then <b>Show settings: All</b> (bottom left).
+          </li>
+          <li className={styles.helpStep}>
+            <b>Interface → Main interfaces</b>: tick <b>Web</b>.
+          </li>
+          <li className={styles.helpStep}>
+            <b>Main interfaces → Lua</b>: set a <b>password</b> and enter it below. Save, then restart VLC.
+          </li>
+        </ol>
+        <div className={styles.calRow}>
+          <input
+            type="text"
+            className={styles.calName}
+            value={port}
+            placeholder="8080"
+            onChange={e => setPort(e.target.value.replace(/\D/g, ''))}
+            onBlur={() => save({ port })}
+          />
+          <input
+            type="password"
+            className={styles.grow}
+            value={password}
+            placeholder={hasPassword ? 'Password saved (type to change)' : 'VLC Lua password'}
+            onChange={e => setPassword(e.target.value)}
+            onBlur={() => password && save({ password })}
+          />
+          <button className={styles.primaryBtn} onClick={test} disabled={status === 'testing'}>
+            <span className="material-icons">wifi_tethering</span>
+            {status === 'testing' ? 'Testing…' : 'Test'}
+          </button>
+        </div>
+        {status && status !== 'testing' && (
+          <p className={status === 'ok' ? styles.okNote : styles.warn}>
+            <span className="material-icons">{status === 'ok' ? 'check_circle' : 'error'}</span>
+            {status === 'ok'
+              ? 'Connected to VLC.'
+              : status === 'auth'
+                ? 'VLC answered, but the password is wrong.'
+                : 'Couldn’t reach VLC. Is it open, with the Web interface on and restarted?'}
+          </p>
+        )}
+      </div>
+    </section>
+  )
+}
 
 const WidgetsTab: React.FC = () => {
   const [location, setLocation] = useState<WeatherLocation | null>(null)
@@ -185,6 +286,8 @@ const WidgetsTab: React.FC = () => {
           <span className="material-icons">add</span>Add calendar
         </button>
       </section>
+
+      <VlcCard />
 
       <section className={styles.card}>
         <h3>

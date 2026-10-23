@@ -88,6 +88,9 @@ declare global {
         { ok: true; path: string; count: number } | { ok: false; canceled?: boolean; error?: string }
       >
       getPreviewConnection: () => Promise<{ port: number; password: string } | null>
+      getVlcSettings: () => Promise<{ enabled: boolean; port: number; hasPassword: boolean }>
+      saveVlcSettings: (s: { enabled: boolean; port: number; password?: string }) => Promise<boolean>
+      testVlc: (s: { port: number; password?: string }) => Promise<'ok' | 'auth' | 'offline'>
       importSettings: () => Promise<
         { ok: true; count: number } | { ok: false; canceled?: boolean; error?: string }
       >
