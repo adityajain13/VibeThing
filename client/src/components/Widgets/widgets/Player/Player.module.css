@@ -1,4 +1,7 @@
 .player {
+  --p-time-m: var(--t-player-s, 1);
+  --p-time-s: var(--t-player-times-s, 1);
+  --p-time-w: var(--t-player-times-w, 600);
   position: relative;
   flex-direction: column;
   align-items: center;
@@ -100,8 +103,8 @@
 }
 
 .name {
-  font-size: calc(23px * var(--text-scale, 1));
-  font-weight: 800;
+  font-size: calc(23px * var(--t-player-s, 1) * var(--t-player-title-s, 1));
+  font-weight: var(--t-player-title-w, 800);
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -109,8 +112,8 @@
 }
 
 .artists {
-  font-size: calc(17px * var(--text-scale, 1));
-  font-weight: 500;
+  font-size: calc(17px * var(--t-player-s, 1) * var(--t-player-artist-s, 1));
+  font-weight: var(--t-player-artist-w, 500);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
@@ -135,8 +138,8 @@
 }
 
 .lyric {
-  font-size: calc(16px * var(--text-scale, 1));
-  font-weight: 600;
+  font-size: calc(16px * var(--t-player-s, 1) * var(--t-player-lyric-s, 1));
+  font-weight: var(--t-player-lyric-w, 600);
   color: var(--accent);
   margin-top: 6px;
   white-space: nowrap;

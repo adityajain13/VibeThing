@@ -1,3 +1,4 @@
+import { useOption } from '@/lib/useOption.ts'
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
 
 import { useTopic } from '@/contexts/TopicsContext.tsx'
@@ -55,6 +56,9 @@ const Meter: React.FC<{ label: string; value: number | null; detail?: string }> 
 
 const System: React.FC = () => {
   const data = useTopic<SystemData>('system')
+  const showGraph = useOption('system', 'showGraph')
+  const showGpu = useOption('system', 'showGpu')
+  const showNetwork = useOption('system', 'showNetwork')
 
   if (!data) {
     return (
@@ -77,14 +81,14 @@ const System: React.FC = () => {
             <p className={`${styles.sub} tnum`}>{data.cpu.temperature}°C</p>
           )}
         </div>
-        <Sparkline values={data.cpu.history} />
+        {showGraph && <Sparkline values={data.cpu.history} />}
       </div>
       <Meter
         label="Memory"
         value={data.memory.percent}
         detail={`${gb(data.memory.used)} / ${gb(data.memory.total)} GB`}
       />
-      {data.gpu && (
+      {showGpu && data.gpu && (
         <Meter
           label={data.gpu.name}
           value={data.gpu.load}
@@ -95,16 +99,18 @@ const System: React.FC = () => {
           }
         />
       )}
-      <div className={`${styles.net} tnum`}>
-        <span>
-          <span className="material-icons">south</span>
-          {rate(data.network.down)}
-        </span>
-        <span>
-          <span className="material-icons">north</span>
-          {rate(data.network.up)}
-        </span>
-      </div>
+      {showNetwork && (
+        <div className={`${styles.net} tnum`}>
+          <span>
+            <span className="material-icons">south</span>
+            {rate(data.network.down)}
+          </span>
+          <span>
+            <span className="material-icons">north</span>
+            {rate(data.network.up)}
+          </span>
+        </div>
+      )}
     </BaseWidget>
   )
 }

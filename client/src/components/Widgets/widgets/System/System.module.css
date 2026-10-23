@@ -17,14 +17,14 @@
 }
 
 .cpuLabel {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: calc(15px * var(--t-system-s, 1) * var(--t-system-label-s, 1));
+  font-weight: var(--t-system-label-w, 700);
   color: var(--muted);
 }
 
 .cpuValue {
-  font-size: 58px;
-  font-weight: 800;
+  font-size: calc(58px * var(--t-system-s, 1) * var(--t-system-cpu-s, 1));
+  font-weight: var(--t-system-cpu-w, 800);
   letter-spacing: -0.03em;
   line-height: 1;
 }
@@ -36,9 +36,9 @@
 }
 
 .sub {
-  font-size: 15px;
+  font-size: calc(15px * var(--t-system-s, 1) * var(--t-system-sub-s, 1));
   color: var(--muted);
-  font-weight: 600;
+  font-weight: var(--t-system-sub-w, 600);
   margin-top: 2px;
 }
 
@@ -67,8 +67,8 @@
 .meterHead {
   display: flex;
   justify-content: space-between;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: calc(15px * var(--t-system-s, 1) * var(--t-system-label-s, 1));
+  font-weight: var(--t-system-label-w, 700);
   margin-bottom: 6px;
 }
 
@@ -97,8 +97,8 @@
 .net {
   display: flex;
   margin-top: 12px;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: calc(15px * var(--t-system-s, 1) * var(--t-system-net-s, 1));
+  font-weight: var(--t-system-net-w, 700);
   color: var(--muted);
 }
 

@@ -124,7 +124,6 @@ const Player: React.FC = () => {
   const vars = {
     ...(coverPx ? { '--cover-px': `${coverPx}px` } : {}),
     '--cover-size': p.coverSize / 100,
-    '--text-scale': p.textScale / 100,
     '--controls-scale': p.controlsScale / 100
   } as React.CSSProperties
 

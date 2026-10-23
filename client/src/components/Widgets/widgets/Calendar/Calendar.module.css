@@ -19,8 +19,8 @@
 }
 
 .dayLabel {
-  font-size: 15px;
-  font-weight: 800;
+  font-size: calc(15px * var(--t-calendar-s, 1) * var(--t-calendar-day-s, 1));
+  font-weight: var(--t-calendar-day-w, 800);
   color: var(--accent);
   margin-bottom: 4px;
 }
@@ -50,25 +50,25 @@
 }
 
 .title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: calc(18px * var(--t-calendar-s, 1) * var(--t-calendar-title-s, 1));
+  font-weight: var(--t-calendar-title-w, 700);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .location {
-  font-size: 14px;
+  font-size: calc(14px * var(--t-calendar-s, 1) * var(--t-calendar-location-s, 1));
   color: var(--muted);
-  font-weight: 500;
+  font-weight: var(--t-calendar-location-w, 500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .time {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: calc(15px * var(--t-calendar-s, 1) * var(--t-calendar-time-s, 1));
+  font-weight: var(--t-calendar-time-w, 700);
   color: var(--muted);
   margin-left: 12px;
   white-space: nowrap;

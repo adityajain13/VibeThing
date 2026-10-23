@@ -1,3 +1,4 @@
+import { useOption } from '@/lib/useOption.ts'
 import { useContext, useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 
@@ -16,6 +17,7 @@ const Macros: React.FC = () => {
   const run = useRunAction()
   const rootRef = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState(0)
+  const showNames = useOption('macros', 'showNames')
   const [flash, setFlash] = useState<{ id: string; ok: boolean } | null>(null)
 
   useEffect(() => {
@@ -67,7 +69,7 @@ const Macros: React.FC = () => {
               <span className="material-icons" style={{ background: m.color }}>
                 {m.icon}
               </span>
-              <p>{m.name}</p>
+              {showNames && <p>{m.name}</p>}
             </button>
           ))}
         </div>

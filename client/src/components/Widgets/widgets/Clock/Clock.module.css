@@ -5,28 +5,28 @@
 }
 
 .time {
-  font-size: 84px;
-  font-weight: 800;
+  font-size: calc(84px * var(--t-clock-s, 1) * var(--t-clock-time-s, 1));
+  font-weight: var(--t-clock-time-w, 800);
   letter-spacing: -0.04em;
   line-height: 1;
 }
 
 .date {
-  font-size: 21px;
-  font-weight: 600;
+  font-size: calc(21px * var(--t-clock-s, 1) * var(--t-clock-date-s, 1));
+  font-weight: var(--t-clock-date-w, 600);
   color: var(--accent);
   margin-top: 8px;
 }
 
 [data-h='short'] .time {
-  font-size: 64px;
+  font-size: calc(64px * var(--t-clock-s, 1) * var(--t-clock-time-s, 1));
 }
 
 [data-h='short'] .date {
-  font-size: 18px;
+  font-size: calc(18px * var(--t-clock-s, 1) * var(--t-clock-date-s, 1));
   margin-top: 4px;
 }
 
 [data-w='narrow'] .time {
-  font-size: 54px;
+  font-size: calc(54px * var(--t-clock-s, 1) * var(--t-clock-time-s, 1));
 }

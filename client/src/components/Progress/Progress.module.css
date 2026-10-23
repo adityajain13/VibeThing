@@ -5,8 +5,9 @@
 }
 
 .progress span {
-  font-size: 14px;
-  font-weight: 600;
+  /* set by whichever player hosts the bar, so each can be styled separately */
+  font-size: calc(14px * var(--p-time-m, 1) * var(--p-time-s, 1));
+  font-weight: var(--p-time-w, 600);
   color: var(--muted);
   min-width: 40px;
 }

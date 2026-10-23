@@ -1,4 +1,7 @@
 .player {
+  --p-time-m: var(--t-fullscreen-s, 1);
+  --p-time-s: var(--t-fullscreen-times-s, 1);
+  --p-time-w: var(--t-fullscreen-times-w, 600);
   position: fixed;
   top: 0;
   left: 0;
@@ -71,8 +74,8 @@
 
 .tab {
   all: unset;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: calc(17px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-tabs-s, 1));
+  font-weight: var(--t-fullscreen-tabs-w, 700);
   color: var(--muted);
   padding: 9px 18px;
   border-radius: 999px;
@@ -131,8 +134,8 @@
 }
 
 .title {
-  font-size: 38px;
-  font-weight: 800;
+  font-size: calc(38px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-title-s, 1));
+  font-weight: var(--t-fullscreen-title-w, 800);
   letter-spacing: -0.025em;
   line-height: 1.1;
   overflow: hidden;
@@ -142,8 +145,8 @@
 }
 
 .artist {
-  font-size: 22px;
-  font-weight: 600;
+  font-size: calc(22px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-artist-s, 1));
+  font-weight: var(--t-fullscreen-artist-w, 600);
   margin-top: 8px;
   white-space: nowrap;
   overflow: hidden;
@@ -151,8 +154,8 @@
 }
 
 .album {
-  font-size: 17px;
-  font-weight: 500;
+  font-size: calc(17px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-album-s, 1));
+  font-weight: var(--t-fullscreen-album-w, 500);
   color: var(--muted);
   margin-top: 2px;
   white-space: nowrap;
@@ -251,17 +254,17 @@
 }
 
 .queueName {
-  font-size: 19px;
-  font-weight: 700;
+  font-size: calc(19px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-queueTitle-s, 1));
+  font-weight: var(--t-fullscreen-queueTitle-w, 700);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .queueArtists {
-  font-size: 15px;
+  font-size: calc(15px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-queueArtist-s, 1));
   color: var(--muted);
-  font-weight: 500;
+  font-weight: var(--t-fullscreen-queueArtist-w, 500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -289,19 +292,20 @@
 }
 
 .miniTitle {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: calc(17px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-miniTitle-s, 1));
+  font-weight: var(--t-fullscreen-miniTitle-w, 700);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .miniArtist {
-  font-size: 14px;
+  font-size: calc(14px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-miniArtist-s, 1));
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: var(--t-fullscreen-miniArtist-w, 500);
 }
 
 .miniProgress {

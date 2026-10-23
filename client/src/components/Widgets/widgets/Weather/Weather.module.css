@@ -20,31 +20,31 @@
 }
 
 .degrees {
-  font-size: 52px;
-  font-weight: 800;
+  font-size: calc(52px * var(--t-weather-s, 1) * var(--t-weather-temp-s, 1));
+  font-weight: var(--t-weather-temp-w, 800);
   letter-spacing: -0.03em;
   line-height: 1;
 }
 
 .label {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: calc(16px * var(--t-weather-s, 1) * var(--t-weather-condition-s, 1));
+  font-weight: var(--t-weather-condition-w, 600);
   color: var(--muted);
   margin-top: 3px;
 }
 
 .side {
   text-align: right;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: calc(15px * var(--t-weather-s, 1) * var(--t-weather-details-s, 1));
+  font-weight: var(--t-weather-details-w, 600);
   color: var(--muted);
   line-height: 1.45;
 }
 
 .place {
   color: var(--text);
-  font-size: 17px;
-  font-weight: 700;
+  font-size: calc(17px * var(--t-weather-s, 1) * var(--t-weather-place-s, 1));
+  font-weight: var(--t-weather-place-w, 700);
 }
 
 .hours {
@@ -59,8 +59,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: calc(16px * var(--t-weather-s, 1) * var(--t-weather-hourTemp-s, 1));
+  font-weight: var(--t-weather-hourTemp-w, 700);
 }
 
 .hour span {
@@ -70,8 +70,9 @@
 }
 
 .hourTime {
-  font-size: 13px;
+  font-size: calc(13px * var(--t-weather-s, 1) * var(--t-weather-hourTime-s, 1));
   color: var(--muted);
+  font-weight: var(--t-weather-hourTime-w, 700);
 }
 
 [data-h='short'] .hours {

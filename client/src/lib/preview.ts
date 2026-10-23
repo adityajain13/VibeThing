@@ -194,7 +194,14 @@ export class PreviewSocket {
           {
             label: 'Today',
             events: [
-              { title: 'Sample event', time: '14:00', allDay: false, color: '#4f8cff', start: now + 3600e3, end: now + 7200e3 }
+              { title: 'Team sync', time: '2:00 PM', allDay: false, location: 'Teams', color: '#4f8cff', start: now + 3600e3, end: now + 7200e3 },
+              { title: 'Dinner reservation', time: '6:00 PM', allDay: false, location: '25 Main St, Mississauga', color: '#ff7a59', start: now + 5 * 3600e3, end: now + 7 * 3600e3 }
+            ]
+          },
+          {
+            label: 'Monday, Oct 26',
+            events: [
+              { title: 'Gym', time: '7:30 AM', allDay: false, location: 'Community Centre', color: '#2ec27e', start: now + 66 * 3600e3, end: now + 67 * 3600e3 }
             ]
           }
         ]

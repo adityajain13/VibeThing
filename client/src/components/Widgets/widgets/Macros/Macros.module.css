@@ -51,8 +51,8 @@
 }
 
 .macro p {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: calc(14px * var(--t-macros-s, 1) * var(--t-macros-name-s, 1));
+  font-weight: var(--t-macros-name-w, 700);
   margin-top: 7px;
   text-align: center;
   white-space: nowrap;

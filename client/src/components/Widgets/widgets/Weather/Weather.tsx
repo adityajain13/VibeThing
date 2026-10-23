@@ -1,3 +1,4 @@
+import { useOption } from '@/lib/useOption.ts'
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
 
 import { useTopic } from '@/contexts/TopicsContext.tsx'
@@ -14,6 +15,10 @@ function hourLabel(iso: string) {
 
 const Weather: React.FC = () => {
   const data = useTopic<WeatherData | TopicError>('weather')
+  const showCondition = useOption('weather', 'showCondition')
+  const showPlace = useOption('weather', 'showPlace')
+  const showDetails = useOption('weather', 'showDetails')
+  const showHourly = useOption('weather', 'showHourly')
 
   if (!data || 'error' in data) {
     return (
@@ -27,6 +32,7 @@ const Weather: React.FC = () => {
   }
 
   const now = describeWeather(data.current.code, data.current.isDay)
+  const showSide = showPlace || showDetails
 
   return (
     <BaseWidget className={styles.weather}>
@@ -34,21 +40,27 @@ const Weather: React.FC = () => {
         <span className={`material-icons ${styles.icon}`}>{now.icon}</span>
         <div className={styles.temp}>
           <p className={`${styles.degrees} tnum`}>{data.current.temperature}°</p>
-          <p className={styles.label}>{now.label}</p>
+          {showCondition && <p className={styles.label}>{now.label}</p>}
         </div>
-        <div className={styles.side}>
-          <p className={styles.place}>{data.location.split(',')[0]}</p>
-          <p className="tnum">
-            {data.today.max}° / {data.today.min}°
-          </p>
-          <p className="tnum">
-            {data.today.precipitationChance > 0
-              ? `${data.today.precipitationChance}% rain`
-              : `Feels ${data.current.feelsLike}°`}
-          </p>
-        </div>
+        {showSide && (
+          <div className={styles.side}>
+            {showPlace && <p className={styles.place}>{data.location.split(',')[0]}</p>}
+            {showDetails && (
+              <>
+                <p className="tnum">
+                  {data.today.max}° / {data.today.min}°
+                </p>
+                <p className="tnum">
+                  {data.today.precipitationChance > 0
+                    ? `${data.today.precipitationChance}% rain`
+                    : `Feels ${data.current.feelsLike}°`}
+                </p>
+              </>
+            )}
+          </div>
+        )}
       </div>
-      <div className={styles.hours}>
+      {showHourly && <div className={styles.hours}>
         {data.hourly.map(h => (
           <div key={h.time} className={styles.hour}>
             <p className={styles.hourTime}>{hourLabel(h.time)}</p>
@@ -56,7 +68,7 @@ const Weather: React.FC = () => {
             <p className="tnum">{h.temperature}°</p>
           </div>
         ))}
-      </div>
+      </div>}
     </BaseWidget>
   )
 }

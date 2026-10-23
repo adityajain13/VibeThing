@@ -1,3 +1,4 @@
+import { useOption } from '@/lib/useOption.ts'
 import { useContext, useEffect, useRef } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
@@ -51,6 +52,7 @@ const Queue: React.FC = () => {
 
 const FullscreenPlayer: React.FC = () => {
   const { fullscreen, setFullscreen } = useContext(UIContext)
+  const showAlbum = useOption('fullscreen', 'showAlbum')
   const { image, playerData, actions, supports } = useContext(MediaContext)
   const shown = fullscreen !== null
   const view = fullscreen ?? 'cover'
@@ -135,7 +137,7 @@ const FullscreenPlayer: React.FC = () => {
               <div className={styles.info}>
                 <p className={styles.title}>{playerData.track.name}</p>
                 <p className={styles.artist}>{playerData.track.artists.join(', ')}</p>
-                <p className={styles.album}>{playerData.track.album}</p>
+                {showAlbum && <p className={styles.album}>{playerData.track.album}</p>}
                 <Progress className={styles.progress} />
                 <div className={styles.controls}>
                   <button

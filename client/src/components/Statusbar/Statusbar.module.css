@@ -7,16 +7,16 @@
 }
 
 .time {
-  font-weight: 700;
-  font-size: 22px;
+  font-weight: var(--t-statusbar-time-w, 700);
+  font-size: calc(22px * var(--t-statusbar-s, 1) * var(--t-statusbar-time-s, 1));
   letter-spacing: -0.01em;
 }
 
 .date {
-  font-size: 17px;
+  font-size: calc(17px * var(--t-statusbar-s, 1) * var(--t-statusbar-date-s, 1));
   color: var(--muted);
   margin-left: 12px;
-  font-weight: 500;
+  font-weight: var(--t-statusbar-date-w, 500);
 }
 
 .pages {
@@ -27,8 +27,8 @@
 
 .page {
   all: unset;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: calc(15px * var(--t-statusbar-s, 1) * var(--t-statusbar-page-s, 1));
+  font-weight: var(--t-statusbar-page-w, 600);
   color: var(--faint);
   padding: 6px 12px;
   border-radius: 999px;

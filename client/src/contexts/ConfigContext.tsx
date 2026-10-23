@@ -36,6 +36,8 @@ export const defaultConfig: FullConfig = {
     showLike: true,
     glow: true
   },
+  text: {},
+  options: {},
   macros: []
 }
 

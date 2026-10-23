@@ -5,18 +5,18 @@ import { ModalContext } from '@/contexts/ModalContext.js'
 import type { ClientConfig, Macro } from '@/types/Config.js'
 
 import ScreensTab from './tabs/ScreensTab.js'
-import PlayerTab from './tabs/PlayerTab.js'
+import AppearanceTab from './tabs/AppearanceTab.js'
 import ControlsTab from './tabs/ControlsTab.js'
 import MacrosTab from './tabs/MacrosTab.js'
 import WidgetsTab from './tabs/WidgetsTab.js'
 
 import styles from './Customize.module.css'
 
-type Tab = 'screens' | 'player' | 'controls' | 'macros' | 'widgets'
+type Tab = 'screens' | 'appearance' | 'controls' | 'macros' | 'widgets'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'screens', label: 'Screens', icon: 'dashboard' },
-  { id: 'player', label: 'Now playing', icon: 'album' },
+  { id: 'appearance', label: 'Appearance', icon: 'palette' },
   { id: 'controls', label: 'Buttons & knob', icon: 'gamepad' },
   { id: 'macros', label: 'Macros', icon: 'bolt' },
   { id: 'widgets', label: 'Widget data', icon: 'tune' }
@@ -163,8 +163,8 @@ const Customize: React.FC = () => {
         <div className={styles.body}>
           {!config || !macros ? null : tab === 'screens' ? (
             <ScreensTab config={config} update={updateConfig} />
-          ) : tab === 'player' ? (
-            <PlayerTab config={config} macros={macros} update={updateConfig} />
+          ) : tab === 'appearance' ? (
+            <AppearanceTab config={config} macros={macros} update={updateConfig} />
           ) : tab === 'controls' ? (
             <ControlsTab
               config={config}

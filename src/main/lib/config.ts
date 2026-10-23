@@ -68,7 +68,9 @@ export const defaultClientConfig: ClientConfig = {
   seekStep: 10,
   accent: 'album',
   playerLyricsLine: true,
-  player: defaultPlayerLayout
+  player: defaultPlayerLayout,
+  text: {},
+  options: {}
 }
 
 export const defaultMacros: Macro[] = [
@@ -102,6 +104,10 @@ function sanitizeScreens(screens: unknown): Screen[] {
   return valid.length > 0 ? valid : defaultScreens
 }
 
+function isPlainObject<T>(v: T | undefined): v is T {
+  return !!v && typeof v === 'object' && !Array.isArray(v)
+}
+
 export function getClientConfig(): ClientConfig {
   const stored = (getStorageValue('clientConfig') ?? {}) as Partial<
     ClientConfig
@@ -122,7 +128,9 @@ export function getClientConfig(): ClientConfig {
     player: {
       ...defaultPlayerLayout,
       ...(stored.player ?? {})
-    }
+    },
+    text: isPlainObject(stored.text) ? stored.text : {},
+    options: isPlainObject(stored.options) ? stored.options : {}
   }
 }
 

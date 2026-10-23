@@ -1,3 +1,4 @@
+import { useOption } from '@/lib/useOption.ts'
 import { useContext } from 'react'
 
 import { ConfigContext } from '@/contexts/ConfigContext.tsx'
@@ -14,11 +15,14 @@ const Statusbar: React.FC = () => {
   const { screen, setScreen } = useContext(UIContext)
   const time = useServerTime()
 
+  const showDate = useOption('statusbar', 'showDate')
+  const showPages = useOption('statusbar', 'showPages')
+
   return (
     <div className={styles.statusbar}>
       <div className={`${styles.time} tnum`}>{time?.time}</div>
-      <div className={styles.date}>{time?.date}</div>
-      {screens.length > 1 && (
+      {showDate && <div className={styles.date}>{time?.date}</div>}
+      {showPages && screens.length > 1 && (
         <div className={styles.pages}>
           {screens.map((s, i) => (
             <button

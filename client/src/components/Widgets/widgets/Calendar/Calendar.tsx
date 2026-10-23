@@ -1,3 +1,4 @@
+import { useOption } from '@/lib/useOption.ts'
 import { useEffect, useRef } from 'react'
 
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
@@ -23,6 +24,11 @@ const Calendar: React.FC = () => {
     return () => document.removeEventListener('wheel', listener)
   }, [])
 
+  const showLocation = useOption('calendar', 'showLocation')
+  const showTime = useOption('calendar', 'showTime')
+  const showDayLabels = useOption('calendar', 'showDayLabels')
+  const showColor = useOption('calendar', 'showColor')
+
   let body: React.ReactNode
   if (!data) body = <p className={styles.empty}>Loading your calendar…</p>
   else if (data.error) body = <p className={styles.empty}>{data.error}</p>
@@ -30,15 +36,15 @@ const Calendar: React.FC = () => {
   else
     body = data.days.map(day => (
       <div key={day.label} className={styles.day}>
-        <p className={styles.dayLabel}>{day.label}</p>
+        {showDayLabels && <p className={styles.dayLabel}>{day.label}</p>}
         {day.events.map((ev, i) => (
           <div key={i} className={styles.event}>
-            <span className={styles.dot} style={{ background: ev.color }} />
+            {showColor && <span className={styles.dot} style={{ background: ev.color }} />}
             <div className={styles.eventText}>
               <p className={styles.title}>{ev.title}</p>
-              {ev.location && <p className={styles.location}>{ev.location}</p>}
+              {showLocation && ev.location && <p className={styles.location}>{ev.location}</p>}
             </div>
-            <p className={`${styles.time} tnum`}>{ev.time}</p>
+            {showTime && <p className={`${styles.time} tnum`}>{ev.time}</p>}
           </div>
         ))}
       </div>

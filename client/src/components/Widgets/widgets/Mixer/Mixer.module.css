@@ -9,8 +9,8 @@
 }
 
 .heading {
-  font-size: 17px;
-  font-weight: 800;
+  font-size: calc(17px * var(--t-mixer-s, 1) * var(--t-mixer-heading-s, 1));
+  font-weight: var(--t-mixer-heading-w, 800);
   margin-right: auto;
 }
 
@@ -106,8 +106,8 @@
 .head {
   display: flex;
   justify-content: space-between;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: calc(15px * var(--t-mixer-s, 1) * var(--t-mixer-app-s, 1));
+  font-weight: var(--t-mixer-app-w, 700);
 }
 
 .name {

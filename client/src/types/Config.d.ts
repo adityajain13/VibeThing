@@ -89,6 +89,10 @@ export interface ClientConfig {
   /** Show the synced lyric line under the track on the home player */
   playerLyricsLine: boolean
   player: PlayerLayout
+  /** Text styles keyed "group" (whole-widget size %) or "group.slot" */
+  text: Record<string, { size?: number; weight?: number }>
+  /** Show/hide options per widget group, e.g. options.calendar.showLocation */
+  options: Record<string, Record<string, boolean>>
 }
 
 export type MacroStep =
