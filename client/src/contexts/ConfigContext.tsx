@@ -39,6 +39,10 @@ export const defaultConfig: FullConfig = {
   text: {},
   options: {},
   theme: 'dark',
+  behaviour: {
+    autoSwitch: { enabled: false, playScreen: 'auto', idleScreen: 'none', idleMinutes: 5 },
+    night: { enabled: false, start: '23:00', end: '07:00', brightness: 8, clockOnly: true }
+  },
   macros: []
 }
 
@@ -47,7 +51,11 @@ function withDefaults(data: Partial<FullConfig>): FullConfig {
   return {
     ...defaultConfig,
     ...data,
-    player: { ...defaultConfig.player, ...(data.player ?? {}) }
+    player: { ...defaultConfig.player, ...(data.player ?? {}) },
+    behaviour: {
+      autoSwitch: { ...defaultConfig.behaviour.autoSwitch, ...(data.behaviour?.autoSwitch ?? {}) },
+      night: { ...defaultConfig.behaviour.night, ...(data.behaviour?.night ?? {}) }
+    }
   }
 }
 

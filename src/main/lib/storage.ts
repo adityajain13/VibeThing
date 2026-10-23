@@ -22,6 +22,9 @@ let storage = {}
 async function broadcastConfig() {
   const { buildConfigMessage } = await import('./handlers/config.js')
   serverManager.broadcast('config', buildConfigMessage())
+  // night mode settings live in the config; apply changes right away
+  const { checkNight } = await import('./night.js')
+  await checkNight()
 }
 
 const storageValueHandlers: Record<string, (value: unknown) => void> = {

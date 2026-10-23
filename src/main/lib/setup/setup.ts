@@ -6,8 +6,9 @@ import {
 import * as time from './time.js'
 import * as playback from './playback.js'
 import * as widgets from './widgets.js'
+import * as night from './night.js'
 
-const setupHandlers: SetupHandler[] = [time, playback, widgets]
+const setupHandlers: SetupHandler[] = [time, playback, widgets, night]
 
 export async function runServerSetup() {
   const cleanupFunctions: CleanupFunction[] = []

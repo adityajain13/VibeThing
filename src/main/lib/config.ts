@@ -1,6 +1,7 @@
 import { getStorageValue } from './storage.js'
 
 import {
+  Behaviour,
   ButtonAction,
   ClientConfig,
   PlayerLayout,
@@ -34,6 +35,11 @@ export const defaultScreens: Screen[] = [
 ]
 
 const none: ButtonAction = { type: 'none' }
+
+export const defaultBehaviour: Behaviour = {
+  autoSwitch: { enabled: false, playScreen: 'auto', idleScreen: 'none', idleMinutes: 5 },
+  night: { enabled: false, start: '23:00', end: '07:00', brightness: 8, clockOnly: true }
+}
 
 export const defaultPlayerLayout: PlayerLayout = {
   layout: 'auto',
@@ -71,7 +77,8 @@ export const defaultClientConfig: ClientConfig = {
   player: defaultPlayerLayout,
   text: {},
   options: {},
-  theme: 'dark'
+  theme: 'dark',
+  behaviour: defaultBehaviour
 }
 
 export const defaultMacros: Macro[] = [
@@ -131,7 +138,11 @@ export function getClientConfig(): ClientConfig {
       ...(stored.player ?? {})
     },
     text: isPlainObject(stored.text) ? stored.text : {},
-    options: isPlainObject(stored.options) ? stored.options : {}
+    options: isPlainObject(stored.options) ? stored.options : {},
+    behaviour: {
+      autoSwitch: { ...defaultBehaviour.autoSwitch, ...(stored.behaviour?.autoSwitch ?? {}) },
+      night: { ...defaultBehaviour.night, ...(stored.behaviour?.night ?? {}) }
+    }
   }
 }
 

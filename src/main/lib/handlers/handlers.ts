@@ -6,6 +6,7 @@ import * as lock from './lock.js'
 import * as lyrics from './lyrics.js'
 import * as macros from './macros.js'
 import * as mixer from './mixer.js'
+import * as night from './night.js'
 import * as ping from './ping.js'
 import * as playback from './playback.js'
 import * as reboot from './reboot.js'
@@ -25,6 +26,7 @@ export const handlers: Handler[] = [
   lyrics,
   macros,
   mixer,
+  night,
   ping,
   playback,
   reboot,

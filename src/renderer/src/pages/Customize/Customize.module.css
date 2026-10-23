@@ -1293,3 +1293,31 @@
 .themeSwatch[data-theme='black-flat'] i {
   background: #000;
 }
+
+/* behaviour */
+.dimmable {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 150ms ease;
+}
+
+.dimmable[data-off='true'] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.card > .field > h3 {
+  margin: 0;
+}
+
+.time {
+  padding: 6px 8px;
+  font-size: 13.5px;
+  font-family: inherit;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: #fff;
+  border: 1px solid var(--line);
+  color-scheme: dark;
+}

@@ -71,6 +71,27 @@ export interface PlayerLayout {
   glow: boolean
 }
 
+export interface Behaviour {
+  autoSwitch: {
+    enabled: boolean
+    /** screen id to show when playback starts, or 'auto' = first with Now playing */
+    playScreen: string
+    /** screen id to fall back to after being paused/idle, or 'none' */
+    idleScreen: string
+    idleMinutes: number
+  }
+  night: {
+    enabled: boolean
+    /** HH:mm, 24h */
+    start: string
+    end: string
+    /** screen brightness during night mode, percent */
+    brightness: number
+    /** replace the screens with a dim clock */
+    clockOnly: boolean
+  }
+}
+
 export interface ClientConfig {
   screens: Screen[]
   buttons: Record<PresetKey, ButtonMapping>
@@ -95,6 +116,7 @@ export interface ClientConfig {
   options: Record<string, Record<string, boolean>>
   /** dark = grey panels; black = pure black with hairlines; black-flat = no hairlines */
   theme: 'dark' | 'black' | 'black-flat'
+  behaviour: Behaviour
 }
 
 export type MacroStep =

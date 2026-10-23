@@ -14,6 +14,8 @@ import Statusbar from '@/components/Statusbar/Statusbar.tsx'
 import Screens from '@/components/Screens/Screens.tsx'
 import Toast from '@/components/Toast/Toast.tsx'
 import Menu from '@/components/Menu/Menu.tsx'
+import AutoSwitch from '@/components/AutoSwitch.tsx'
+import NightClock from '@/components/NightClock/NightClock.tsx'
 
 import { textStyleVars } from '@/lib/textSlots.ts'
 
@@ -52,6 +54,8 @@ const App: React.FC = () => {
         {!playerVisible && !fullscreen && <VolumeOverlay fixed />}
       </div>
       <InputController />
+      <AutoSwitch />
+      <NightClock />
       <Toast />
       <LoadingScreen />
       <UpdateScreen />

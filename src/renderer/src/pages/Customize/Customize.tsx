@@ -9,14 +9,16 @@ import AppearanceTab from './tabs/AppearanceTab.js'
 import ControlsTab from './tabs/ControlsTab.js'
 import MacrosTab from './tabs/MacrosTab.js'
 import WidgetsTab from './tabs/WidgetsTab.js'
+import BehaviourTab from './tabs/BehaviourTab.js'
 
 import styles from './Customize.module.css'
 
-type Tab = 'screens' | 'appearance' | 'controls' | 'macros' | 'widgets'
+type Tab = 'screens' | 'appearance' | 'behaviour' | 'controls' | 'macros' | 'widgets'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'screens', label: 'Screens', icon: 'dashboard' },
   { id: 'appearance', label: 'Appearance', icon: 'palette' },
+  { id: 'behaviour', label: 'Behaviour', icon: 'auto_mode' },
   { id: 'controls', label: 'Buttons & knob', icon: 'gamepad' },
   { id: 'macros', label: 'Macros', icon: 'bolt' },
   { id: 'widgets', label: 'Widget data', icon: 'tune' }
@@ -165,6 +167,8 @@ const Customize: React.FC = () => {
             <ScreensTab config={config} update={updateConfig} />
           ) : tab === 'appearance' ? (
             <AppearanceTab config={config} macros={macros} update={updateConfig} />
+          ) : tab === 'behaviour' ? (
+            <BehaviourTab config={config} update={updateConfig} />
           ) : tab === 'controls' ? (
             <ControlsTab
               config={config}
