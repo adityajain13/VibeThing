@@ -30,17 +30,28 @@
 
 .cover {
   align-items: center;
+  /* full width so the measured box is the real space, not the image */
+  align-self: stretch;
+}
+
+/* until measured, keep the art out of the layout so it can't cover the text */
+.cover[data-measured='false'] img {
+  position: absolute;
+  visibility: hidden;
 }
 
 .cover img,
 .placeholder {
-  height: calc(100% * var(--cover-size, 1));
+  height: var(--cover-px, calc(100% * var(--cover-size, 1)));
+  width: var(--cover-px, auto);
+  object-fit: cover;
+  flex-shrink: 0;
   border-radius: 16px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
 }
 
 .placeholder {
-  width: 180px;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,12 +227,12 @@
   font-size: calc(24px * var(--controls-scale, 1));
 }
 
-/* side layout: square cover sized in Player.tsx (--side-cover) */
+/* side layout: square cover sized in Player.tsx (--cover-px) */
 [data-h='short'] .player:not([data-layout='stacked']) .cover,
 [data-h='mid'] .player:not([data-layout='stacked']) .cover,
 .player[data-layout='side'] .cover {
-  height: var(--side-cover, calc(100% * var(--cover-size, 1)));
-  width: var(--side-cover, auto);
+  height: var(--cover-px, calc(100% * var(--cover-size, 1)));
+  width: var(--cover-px, auto);
   align-self: center;
 }
 

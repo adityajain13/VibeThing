@@ -80,32 +80,49 @@ const Player: React.FC = () => {
   const showLyric = config.playerLyricsLine && Boolean(lyrics?.synced?.length)
   const p = config.player
 
-  // side-by-side: the cover is a square that fits the slot height and half its width,
-  // scaled by Cover size (Chrome 69 has no CSS min(), so measure it here)
-  const hasTrack = playerData !== null
-  const [sideCover, setSideCover] = useState<number | null>(null)
+  // The cover is sized in px from measured space. The CarThing runs Chrome 69,
+  // where % heights inside the flex layout don't resolve (the art spilled over
+  // the text) and CSS min() doesn't exist.
+  //  - stacked: a square filling the space left above the text
+  //  - side: a square fitting the slot height and half its width
+  const coverRef = useRef<HTMLButtonElement>(null)
+  const [coverPx, setCoverPx] = useState<number | null>(null)
+  const trackKey = playerData ? `${playerData.track.name}|${playerData.track.artists.join(',')}` : ''
   useEffect(() => {
     const el = playerRef.current
     if (!el) return
     const measure = () => {
-      const isSide = getComputedStyle(el).flexDirection === 'row'
-      if (!isSide) return setSideCover(null)
+      const cover = coverRef.current
+      if (!cover) return
       const cs = getComputedStyle(el)
-      const h = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-      const w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-      setSideCover(Math.max(40, Math.floor(Math.min(h, w * 0.5) * (p.coverSize / 100))))
+      const scale = p.coverSize / 100
+      let size: number
+      if (cs.flexDirection === 'row') {
+        const h = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        const w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+        size = Math.min(h, w * 0.5) * scale
+      } else {
+        size = Math.min(cover.clientHeight, cover.clientWidth) * scale
+      }
+      const next = Math.max(40, Math.floor(size))
+      setCoverPx(prev => (prev === next ? prev : next))
     }
     measure()
     window.addEventListener('resize', measure)
-    const t = setTimeout(measure, 50) // after BaseWidget settles its size class
+    // again once BaseWidget has settled its size class and fonts have loaded
+    const t1 = setTimeout(measure, 60)
+    const t2 = setTimeout(measure, 500)
+    const fonts = (document as unknown as { fonts?: { ready: Promise<unknown> } }).fonts
+    fonts?.ready.then(measure)
     return () => {
       window.removeEventListener('resize', measure)
-      clearTimeout(t)
+      clearTimeout(t1)
+      clearTimeout(t2)
     }
-  }, [p.layout, p.coverSize, hasTrack])
+  }, [p.layout, p.coverSize, p.textScale, p.controlsScale, p.showControls, p.showProgress, p.showTimes, showLyric, trackKey])
 
   const vars = {
-    ...(sideCover ? { '--side-cover': `${sideCover}px` } : {}),
+    ...(coverPx ? { '--cover-px': `${coverPx}px` } : {}),
     '--cover-size': p.coverSize / 100,
     '--text-scale': p.textScale / 100,
     '--controls-scale': p.controlsScale / 100
@@ -124,7 +141,12 @@ const Player: React.FC = () => {
       {playerData ? (
         <>
           {image && p.glow && <img className={styles.glow} src={image} alt="" />}
-          <button className={styles.cover} onMouseDown={handleCoverPress}>
+          <button
+            className={styles.cover}
+            onMouseDown={handleCoverPress}
+            ref={coverRef}
+            data-measured={coverPx !== null}
+          >
             {image ? (
               <img src={image} alt="" />
             ) : (
