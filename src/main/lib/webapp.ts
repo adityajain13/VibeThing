@@ -17,6 +17,13 @@ export async function getWebAppDir() {
     return path.join(app.getPath('userData'), 'customClient')
   }
 
+  // this fork ships its own client inside the installer (extraResources)
+  const bundled = path.join(process.resourcesPath ?? '', 'client')
+  if (app.isPackaged && fs.existsSync(path.join(bundled, 'index.html'))) {
+    log('Using bundled client webapp', 'Client Webapp')
+    return bundled
+  }
+
   if (isDev() && fs.existsSync(path.join(process.cwd(), 'client/dist'))) {
     log('Using local client webapp', 'Client Webapp')
     return path.join(process.cwd(), 'client/dist')
