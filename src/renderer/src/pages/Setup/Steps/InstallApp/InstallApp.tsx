@@ -21,7 +21,9 @@ const errors = {
   adb_extract_failed: 'Failed to extract ADB.',
   webapp_download_failed:
     'Failed to download the GlanceThing client. Make sure you have an active internet connection.',
-  webapp_extract_failed: 'Failed to extract the GlanceThing client.'
+  webapp_extract_failed: 'Failed to extract the GlanceThing client.',
+  webapp_not_bundled:
+    'This build is missing its CarThing client. Re-download the app and try again.'
 }
 
 const InstallApp: React.FC<InstallAppProps> = ({ onStepComplete }) => {

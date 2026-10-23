@@ -30,12 +30,6 @@ const Home: React.FC = () => {
   const carThingStateRef = useRef(carThingState)
   const [needsPlaybackSetup, setNeedsPlaybackSetup] = useState(false)
 
-  const [updateInfo, setUpdateInfo] = useState<{
-    currentVersion: string
-    latestVersion: string
-    downloadUrl: string
-  } | null>(null)
-
   useEffect(() => {
     window.api.getStorageValue('setupComplete').then(setupComplete => {
       if (!setupComplete) navigate('/setup')
@@ -58,17 +52,9 @@ const Home: React.FC = () => {
       if (handler === null) setNeedsPlaybackSetup(true)
     })
 
-    window.api.checkUpdate().then(setUpdateInfo)
-
-    const checkUpdateInterval = setInterval(
-      () => window.api.checkUpdate().then(setUpdateInfo),
-      1000 * 60 * 30
-    )
-
     return () => {
       removeListener()
       clearTimeout(stateTimeout)
-      clearInterval(checkUpdateInterval)
     }
   }, [])
 
@@ -139,25 +125,6 @@ const Home: React.FC = () => {
           >
             Remove
           </button>
-        </div>
-      ) : null}
-      {updateInfo &&
-      updateInfo.latestVersion !== updateInfo.currentVersion ? (
-        <div className={styles.update}>
-          <div className={styles.title}>
-            <span className="material-icons">download</span>A new
-            GlanceThing update is available!
-          </div>
-          <div className={styles.content}>
-            <p className={styles.version}>
-              {updateInfo.currentVersion}{' '}
-              <span className="material-icons">arrow_forward</span>{' '}
-              {updateInfo.latestVersion}
-            </p>
-            <button onClick={() => window.open(updateInfo.downloadUrl)}>
-              Download <span className="material-icons">open_in_new</span>
-            </button>
-          </div>
         </div>
       ) : null}
     </div>

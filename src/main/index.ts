@@ -78,7 +78,6 @@ import {
 
 import { playbackManager } from './lib/playback/playback.js'
 import { applyPatch, getPatches } from './lib/patches.js'
-import { getLatestVersion } from './lib/update.js'
 import { serverManager } from './lib/server.js'
 import { getLocalClientDir } from './lib/webapp.js'
 import { geocode } from './lib/widgets/weather.js'
@@ -531,17 +530,8 @@ async function setupIpcHandlers() {
     return isNightly ? 'nightly' : 'stable'
   })
 
-  ipcMain.handle(IPCHandler.CheckUpdate, async () => {
-    const currentVersion = 'v' + app.getVersion()
-    const latestVersion = await getLatestVersion()
-    if (!latestVersion) return null
-
-    return {
-      currentVersion,
-      latestVersion: latestVersion.version,
-      downloadUrl: latestVersion.downloadUrl
-    }
-  })
+  // this fork doesn't check the official GlanceThing releases for updates
+  ipcMain.handle(IPCHandler.CheckUpdate, async () => null)
 
   ipcMain.handle(IPCHandler.FindOpenPort, async () => {
     return await findOpenPort()
