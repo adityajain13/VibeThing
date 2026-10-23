@@ -1,19 +1,19 @@
 import { exec } from 'child_process'
 import { shell } from 'electron'
 
-import { getMacros } from './config.js'
+import { getClientConfig, getMacros } from './config.js'
 import { playbackManager } from './playback/playback.js'
 import { getShortcuts } from './shortcuts.js'
 import { getParsedPlatformCommand, log, LogLevel } from './utils.js'
 import { sendKeys } from './windowsHelper.js'
 import { setMixerMute } from './widgets/mixer.js'
 
-import { MacroStep, PlaybackButtonAction } from '../types/Config.js'
-
-const SEEK_STEP_MS = 10000
+import { Macro, MacroStep, PlaybackButtonAction } from '../types/Config.js'
 
 export async function runPlaybackAction(action: PlaybackButtonAction) {
   const playback = await playbackManager.getPlayback().catch(() => null)
+  const { volumeStep, seekStep } = getClientConfig()
+  const seekMs = seekStep * 1000
 
   switch (action) {
     case 'playPause':
@@ -31,17 +31,17 @@ export async function runPlaybackAction(action: PlaybackButtonAction) {
     case 'like':
       return void (await playbackManager.setLiked(!playback?.track.liked))
     case 'volumeUp':
-      return playbackManager.setVolume(Math.min(100, (playback?.volume ?? 0) + 10))
+      return playbackManager.setVolume(Math.min(100, (playback?.volume ?? 0) + volumeStep))
     case 'volumeDown':
-      return playbackManager.setVolume(Math.max(0, (playback?.volume ?? 0) - 10))
+      return playbackManager.setVolume(Math.max(0, (playback?.volume ?? 0) - volumeStep))
     case 'seekForward':
       if (!playback) return
       return playbackManager.seek(
-        Math.min(playback.track.duration.total - 1000, playback.track.duration.current + SEEK_STEP_MS)
+        Math.min(playback.track.duration.total - 1000, playback.track.duration.current + seekMs)
       )
     case 'seekBackward':
       if (!playback) return
-      return playbackManager.seek(playback.track.duration.current - SEEK_STEP_MS)
+      return playbackManager.seek(playback.track.duration.current - seekMs)
   }
 }
 
@@ -86,6 +86,13 @@ const running = new Set<string>()
 export async function runMacro(id: string): Promise<boolean> {
   const macro = getMacros().find(m => m.id === id)
   if (!macro) return false
+  return runMacroDefinition(macro)
+}
+
+/** Runs a macro object directly; also used by the desktop app's "Test" button */
+export async function runMacroDefinition(macro: Macro): Promise<boolean> {
+  const id = macro.id
+  if (!Array.isArray(macro.steps)) return false
   if (running.has(id)) return false // ignore double-presses while running
 
   running.add(id)

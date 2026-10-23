@@ -47,7 +47,13 @@ enum IPCHandler {
   GetChannel = 'getChannel',
   CheckUpdate = 'checkUpdate',
   FindOpenPort = 'findOpenPort',
-  IsPortOpen = 'isPortOpen'
+  IsPortOpen = 'isPortOpen',
+  GeocodeLocation = 'geocodeLocation',
+  TestMacro = 'testMacro',
+  GetMixerTargets = 'getMixerTargets',
+  ValidateKeys = 'validateKeys',
+  GetClientConfig = 'getClientConfig',
+  GetMacros = 'getMacros'
 }
 
 // Custom APIs for renderer
@@ -124,7 +130,16 @@ const api = {
   getChannel: () => ipcRenderer.invoke(IPCHandler.GetChannel),
   checkUpdate: () => ipcRenderer.invoke(IPCHandler.CheckUpdate),
   findOpenPort: () => ipcRenderer.invoke(IPCHandler.FindOpenPort),
-  isPortOpen: port => ipcRenderer.invoke(IPCHandler.IsPortOpen, port)
+  isPortOpen: port => ipcRenderer.invoke(IPCHandler.IsPortOpen, port),
+  geocodeLocation: (query: string) =>
+    ipcRenderer.invoke(IPCHandler.GeocodeLocation, query),
+  testMacro: (macro: unknown) =>
+    ipcRenderer.invoke(IPCHandler.TestMacro, macro),
+  getMixerTargets: () => ipcRenderer.invoke(IPCHandler.GetMixerTargets),
+  validateKeys: (keys: string) =>
+    ipcRenderer.invoke(IPCHandler.ValidateKeys, keys),
+  getClientConfig: () => ipcRenderer.invoke(IPCHandler.GetClientConfig),
+  getMacros: () => ipcRenderer.invoke(IPCHandler.GetMacros)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

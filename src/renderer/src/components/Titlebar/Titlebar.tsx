@@ -20,6 +20,11 @@ const Titlebar: React.FC = () => {
         ]
       : []),
     {
+      icon: 'dashboard_customize',
+      action: () =>
+        setModalOpen('customize', !openModals.includes('customize'))
+    },
+    {
       icon: 'apps',
       action: () =>
         setModalOpen('shortcuts', !openModals.includes('shortcuts'))

@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { DevModeContext } from '@/contexts/DevModeContext.js'
+import { ModalContext } from '@/contexts/ModalContext.js'
 
 import icon from '@/assets/icon.png'
 import iconNightly from '@/assets/icon-nightly.png'
@@ -19,6 +20,7 @@ enum CarThingState {
 const Home: React.FC = () => {
   const navigate = useNavigate()
   const { devMode } = useContext(DevModeContext)
+  const { setModalOpen } = useContext(ModalContext)
   const { channel } = useContext(ChannelContext)
   const [hasCustomClient, setHasCustomClient] = useState(false)
 
@@ -104,7 +106,13 @@ const Home: React.FC = () => {
             CarThing found, but the app is not installed. Installing...
           </p>
         ) : carThingState === CarThingState.Ready ? (
-          <p>CarThing is ready!</p>
+          <>
+            <p>CarThing is ready!</p>
+            <button onClick={() => setModalOpen('customize', true)}>
+              Customize screens & buttons{' '}
+              <span className="material-icons">dashboard_customize</span>
+            </button>
+          </>
         ) : (
           <p>Checking for CarThing...</p>
         )}

@@ -75,6 +75,14 @@ declare global {
       } | null>
       findOpenPort: () => Promise<number>
       isPortOpen: (port: number) => Promise<boolean>
+      geocodeLocation: (
+        query: string
+      ) => Promise<{ name: string; latitude: number; longitude: number }[]>
+      testMacro: (macro: unknown) => Promise<boolean>
+      getMixerTargets: () => Promise<{ id: string; name: string }[] | null>
+      validateKeys: (keys: string) => Promise<boolean>
+      getClientConfig: () => Promise<unknown>
+      getMacros: () => Promise<unknown[]>
     }
   }
 }

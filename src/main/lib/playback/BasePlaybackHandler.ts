@@ -27,6 +27,7 @@ export abstract class BasePlaybackHandler extends (EventEmitter as new () => Typ
   abstract getImage(): Promise<Buffer | null>
 
   // Optional capabilities. Handlers advertise support via supportedActions.
+  /* eslint-disable @typescript-eslint/no-unused-vars */
   async seek(_positionMs: number): Promise<void> {}
   async getQueue(): Promise<QueueItem[]> {
     return []
@@ -34,4 +35,5 @@ export abstract class BasePlaybackHandler extends (EventEmitter as new () => Typ
   async setLiked(_liked: boolean): Promise<boolean> {
     return false
   }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }

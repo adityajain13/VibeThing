@@ -78,6 +78,12 @@ import { playbackManager } from './lib/playback/playback.js'
 import { applyPatch, getPatches } from './lib/patches.js'
 import { getLatestVersion } from './lib/update.js'
 import { serverManager } from './lib/server.js'
+import { geocode } from './lib/widgets/weather.js'
+import { listMixerTargets } from './lib/widgets/mixer.js'
+import { runMacroDefinition } from './lib/macros.js'
+import { parseKeys } from './lib/windowsHelper.js'
+import { getClientConfig, getMacros } from './lib/config.js'
+import { Macro } from './types/Config.js'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -248,7 +254,13 @@ enum IPCHandler {
   GetChannel = 'getChannel',
   CheckUpdate = 'checkUpdate',
   FindOpenPort = 'findOpenPort',
-  IsPortOpen = 'isPortOpen'
+  IsPortOpen = 'isPortOpen',
+  GeocodeLocation = 'geocodeLocation',
+  TestMacro = 'testMacro',
+  GetMixerTargets = 'getMixerTargets',
+  ValidateKeys = 'validateKeys',
+  GetClientConfig = 'getClientConfig',
+  GetMacros = 'getMacros'
 }
 
 async function setupIpcHandlers() {
@@ -515,6 +527,26 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.IsPortOpen, async (_event, port) => {
     return await isPortOpen(port as number)
   })
+
+  ipcMain.handle(IPCHandler.GeocodeLocation, async (_event, query) => {
+    return await geocode(String(query)).catch(() => [])
+  })
+
+  ipcMain.handle(IPCHandler.TestMacro, async (_event, macro) => {
+    return await runMacroDefinition(macro as Macro)
+  })
+
+  ipcMain.handle(IPCHandler.GetMixerTargets, async () => {
+    return await listMixerTargets()
+  })
+
+  ipcMain.handle(IPCHandler.ValidateKeys, (_event, keys) => {
+    return parseKeys(String(keys)) !== null
+  })
+
+  ipcMain.handle(IPCHandler.GetClientConfig, () => getClientConfig())
+
+  ipcMain.handle(IPCHandler.GetMacros, () => getMacros())
 }
 
 async function setupTray() {

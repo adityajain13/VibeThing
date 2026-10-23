@@ -118,6 +118,22 @@ export async function setMixerMute(id: string, muted: boolean | 'toggle') {
   if (timer) await pollMixer()
 }
 
+/** App names that can be targeted by a macro "mute" step */
+export async function listMixerTargets(): Promise<
+  { id: string; name: string }[] | null
+> {
+  if (!windowsHelper.supported) return null
+  const raw = await windowsHelper.call<RawList>('list')
+  const seen = new Map<string, string>()
+  for (const s of raw?.sessions ?? [])
+    if (!seen.has(s.name)) seen.set(s.name, prettyName(s.desc, s.name))
+  return [
+    { id: 'master', name: 'Master volume' },
+    { id: 'mic', name: 'Microphone' },
+    ...[...seen].map(([id, name]) => ({ id, name }))
+  ]
+}
+
 export const mixerProvider: TopicProvider = {
   topic: 'mixer',
   start() {
