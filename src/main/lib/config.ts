@@ -70,7 +70,8 @@ export const defaultClientConfig: ClientConfig = {
   playerLyricsLine: true,
   player: defaultPlayerLayout,
   text: {},
-  options: {}
+  options: {},
+  theme: 'dark'
 }
 
 export const defaultMacros: Macro[] = [

@@ -45,8 +45,8 @@
 
 .cover img,
 .placeholder {
-  height: var(--cover-px, calc(100% * var(--cover-size, 1)));
-  width: var(--cover-px, auto);
+  height: var(--cover-h, calc(100% * var(--cover-size, 1)));
+  width: var(--cover-w, auto);
   object-fit: cover;
   flex-shrink: 0;
   border-radius: 16px;
@@ -230,12 +230,12 @@
   font-size: calc(24px * var(--controls-scale, 1));
 }
 
-/* side layout: square cover sized in Player.tsx (--cover-px) */
+/* side layout: cover box sized in Player.tsx (--cover-w / --cover-h) */
 [data-h='short'] .player:not([data-layout='stacked']) .cover,
 [data-h='mid'] .player:not([data-layout='stacked']) .cover,
 .player[data-layout='side'] .cover {
-  height: var(--cover-px, calc(100% * var(--cover-size, 1)));
-  width: var(--cover-px, auto);
+  height: var(--cover-h, calc(100% * var(--cover-size, 1)));
+  width: var(--cover-w, auto);
   align-self: center;
 }
 

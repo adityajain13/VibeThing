@@ -86,7 +86,15 @@ const Player: React.FC = () => {
   //  - stacked: a square filling the space left above the text
   //  - side: a square fitting the slot height and half its width
   const coverRef = useRef<HTMLButtonElement>(null)
-  const [coverPx, setCoverPx] = useState<number | null>(null)
+  const [coverPx, setCoverPx] = useState<{ w: number; h: number } | null>(null)
+  // width / height of the current art; video thumbnails are usually 16:9
+  const [aspect, setAspect] = useState(1)
+  useEffect(() => {
+    if (!image) return setAspect(1)
+    const img = new Image()
+    img.onload = () => setAspect(img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1)
+    img.src = image
+  }, [image])
   const trackKey = playerData ? `${playerData.track.name}|${playerData.track.artists.join(',')}` : ''
   useEffect(() => {
     const el = playerRef.current
@@ -96,16 +104,19 @@ const Player: React.FC = () => {
       if (!cover) return
       const cs = getComputedStyle(el)
       const scale = p.coverSize / 100
-      let size: number
+      let maxW: number, maxH: number
       if (cs.flexDirection === 'row') {
-        const h = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-        const w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-        size = Math.min(h, w * 0.5) * scale
+        maxH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        // wide art may take a little more of the row than square art
+        maxW = (el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) * (aspect > 1.1 ? 0.58 : 0.5)
       } else {
-        size = Math.min(cover.clientHeight, cover.clientWidth) * scale
+        maxH = cover.clientHeight
+        maxW = cover.clientWidth
       }
-      const next = Math.max(40, Math.floor(size))
-      setCoverPx(prev => (prev === next ? prev : next))
+      // largest box with the art's proportions that fits, then scaled
+      const w = Math.min(maxW, maxH * aspect) * scale
+      const next = { w: Math.max(40, Math.floor(w)), h: Math.max(40, Math.floor(w / aspect)) }
+      setCoverPx(prev => (prev && prev.w === next.w && prev.h === next.h ? prev : next))
     }
     measure()
     window.addEventListener('resize', measure)
@@ -119,10 +130,10 @@ const Player: React.FC = () => {
       clearTimeout(t1)
       clearTimeout(t2)
     }
-  }, [p.layout, p.coverSize, p.textScale, p.controlsScale, p.showControls, p.showProgress, p.showTimes, showLyric, trackKey])
+  }, [p.layout, p.coverSize, p.textScale, p.controlsScale, p.showControls, p.showProgress, p.showTimes, showLyric, trackKey, aspect])
 
   const vars = {
-    ...(coverPx ? { '--cover-px': `${coverPx}px` } : {}),
+    ...(coverPx ? { '--cover-w': `${coverPx.w}px`, '--cover-h': `${coverPx.h}px` } : {}),
     '--cover-size': p.coverSize / 100,
     '--controls-scale': p.controlsScale / 100
   } as React.CSSProperties

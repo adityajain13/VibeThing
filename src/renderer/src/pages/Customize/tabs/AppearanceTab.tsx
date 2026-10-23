@@ -39,6 +39,12 @@ export const DEFAULT_PLAYER: PlayerLayout = {
   glow: true
 }
 
+// not a text group: theme and accent colour for the whole CarThing
+const COLOURS: TextGroup = { id: 'colours', label: 'Colours', icon: 'palette', slots: [] }
+const GROUPS: TextGroup[] = [COLOURS, ...TEXT_GROUPS]
+
+const ACCENT_PRESETS = ['#1ed760', '#6ea8ff', '#ff7a59', '#f5c211', '#c061cb', '#ff5c8a', '#eef0f2']
+
 function Segmented<T extends string>({
   value,
   options,
@@ -101,7 +107,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
   const [groupId, setGroupId] = useState('player')
   const [fsView, setFsView] = useState<'cover' | 'queue'>('cover')
 
-  const group = TEXT_GROUPS.find(g => g.id === groupId) ?? TEXT_GROUPS[0]
+  const group = GROUPS.find(g => g.id === groupId) ?? TEXT_GROUPS[0]
   const p = { ...DEFAULT_PLAYER, ...(config.player ?? {}) }
   const text = config.text ?? {}
   const cleanScreens = config.screens
@@ -163,6 +169,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
   }
 
   function resetGroup() {
+    if (group.id === 'colours') return update(c => ({ ...c, theme: 'dark', accent: 'album' }))
     update(c => {
       const nextText = Object.fromEntries(
         Object.entries(c.text ?? {}).filter(([k]) => k !== group.id && !k.startsWith(`${group.id}.`))
@@ -184,7 +191,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
   return (
     <div className={styles.appearanceTab}>
       <nav className={styles.groupChips}>
-        {TEXT_GROUPS.map(g => (
+        {GROUPS.map(g => (
           <button
             key={g.id}
             className={styles.chip}
@@ -236,6 +243,70 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
         </section>
 
         <section className={`${styles.scrollTab} ${styles.playerControls}`}>
+          {group.id === 'colours' && (
+            <>
+              <div className={styles.card}>
+                <h3>Background</h3>
+                <div className={styles.themeChoices}>
+                  {(
+                    [
+                      ['dark', 'Dark grey', 'Grey panels on black'],
+                      ['black', 'Pure black', 'Black panels with a faint outline'],
+                      ['black-flat', 'Pure black, no outlines', 'Everything true black']
+                    ] as const
+                  ).map(([value, label, hint]) => (
+                    <button
+                      key={value}
+                      className={styles.themeChoice}
+                      data-active={(config.theme ?? 'dark') === value}
+                      onClick={() => update(c => ({ ...c, theme: value }))}
+                    >
+                      <span className={styles.themeSwatch} data-theme={value}>
+                        <i />
+                        <i />
+                      </span>
+                      <span>
+                        <b>{label}</b>
+                        <small>{hint}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.card}>
+                <h3>Accent colour</h3>
+                <Segmented<'album' | 'fixed'>
+                  value={config.accent === 'album' ? 'album' : 'fixed'}
+                  onChange={v => update(c => ({ ...c, accent: v === 'album' ? 'album' : '#1ed760' }))}
+                  options={[
+                    { value: 'album', label: 'From album art' },
+                    { value: 'fixed', label: 'Fixed colour' }
+                  ]}
+                />
+                {config.accent !== 'album' && (
+                  <div className={styles.swatches}>
+                    {ACCENT_PRESETS.map(c => (
+                      <button
+                        key={c}
+                        className={styles.colorSwatch}
+                        data-active={config.accent.toLowerCase() === c}
+                        style={{ background: c }}
+                        onClick={() => update(cfg => ({ ...cfg, accent: c }))}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      className={styles.color}
+                      value={config.accent}
+                      onChange={e => update(c => ({ ...c, accent: e.target.value }))}
+                    />
+                  </div>
+                )}
+                <p className={styles.help}>Used for the progress bar, lyric line, focus rings and highlights.</p>
+              </div>
+            </>
+          )}
+
           {group.id === 'player' && (
             <div className={styles.card}>
               <h3>Layout</h3>
@@ -321,6 +392,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
             </div>
           )}
 
+          {group.slots.length > 0 && (
           <div className={styles.card}>
             <h3>Text</h3>
             <Slider label="Whole widget" value={masterSize} min={50} max={200} onChange={setMaster} />
@@ -384,6 +456,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
               })}
             </div>
           </div>
+          )}
 
           <button className={styles.ghostBtn} onClick={resetGroup}>
             <span className="material-icons">restart_alt</span>Reset {group.label}

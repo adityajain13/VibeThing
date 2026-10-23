@@ -49,7 +49,6 @@ const KEYS: PresetKey[] = ['1', '2', '3', '4']
 
 const ControlsTab: React.FC<Props> = ({ config, update, macros, apps }) => {
   const groups = actionGroups({ screens: config.screens, macros, apps })
-  const accentIsAlbum = config.accent === 'album'
 
   function setButton(key: PresetKey, kind: 'press' | 'hold', a: ButtonAction) {
     update(c => ({
@@ -146,35 +145,6 @@ const ControlsTab: React.FC<Props> = ({ config, update, macros, apps }) => {
         </div>
       </section>
 
-      <section className={styles.card}>
-        <h3>Look</h3>
-        <div className={styles.field}>
-          <label>Accent colour</label>
-          <div className={styles.inline}>
-            <select
-              className={styles.select}
-              value={accentIsAlbum ? 'album' : 'custom'}
-              onChange={e =>
-                update(c => ({
-                  ...c,
-                  accent: e.target.value === 'album' ? 'album' : '#1ed760'
-                }))
-              }
-            >
-              <option value="album">From album art</option>
-              <option value="custom">Fixed colour</option>
-            </select>
-            {!accentIsAlbum && (
-              <input
-                type="color"
-                className={styles.color}
-                value={config.accent}
-                onChange={e => update(c => ({ ...c, accent: e.target.value }))}
-              />
-            )}
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

@@ -93,6 +93,8 @@ export interface ClientConfig {
   text: Record<string, { size?: number; weight?: number }>
   /** Show/hide options per widget group, e.g. options.calendar.showLocation */
   options: Record<string, Record<string, boolean>>
+  /** dark = grey panels; black = pure black with hairlines; black-flat = no hairlines */
+  theme: 'dark' | 'black' | 'black-flat'
 }
 
 export type MacroStep =

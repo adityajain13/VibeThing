@@ -1,6 +1,6 @@
 import { useContext, useRef } from 'react'
 
-import { MediaContext, usePosition } from '@/contexts/MediaContext.tsx'
+import { hasKnownLength, MediaContext, usePosition } from '@/contexts/MediaContext.tsx'
 
 import { formatTime } from '@/lib/utils.ts'
 
@@ -18,9 +18,10 @@ const Progress: React.FC<ProgressProps> = ({ showTimes = true, className }) => {
   const barRef = useRef<HTMLDivElement>(null)
 
   if (!playerData) return null
+  const known = hasKnownLength(playerData, position)
   const total = playerData.track.duration.total || 1
-  const pct = Math.max(0, Math.min(100, (position / total) * 100))
-  const seekable = supports('seek')
+  const pct = known ? Math.max(0, Math.min(100, (position / total) * 100)) : 0
+  const seekable = known && supports('seek')
 
   function onPointerDown(e: React.PointerEvent) {
     if (!seekable || !barRef.current) return
@@ -43,7 +44,7 @@ const Progress: React.FC<ProgressProps> = ({ showTimes = true, className }) => {
           <div className={styles.fill} style={{ width: `${pct}%` }} />
         </div>
       </div>
-      {showTimes && <span className="tnum">{formatTime(total)}</span>}
+      {showTimes && <span className="tnum">{known ? formatTime(total) : '--:--'}</span>}
     </div>
   )
 }

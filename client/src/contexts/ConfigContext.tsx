@@ -38,6 +38,7 @@ export const defaultConfig: FullConfig = {
   },
   text: {},
   options: {},
+  theme: 'dark',
   macros: []
 }
 

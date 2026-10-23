@@ -1,5 +1,5 @@
 import { useOption } from '@/lib/useOption.ts'
-import { useContext, useEffect, useRef } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import { FullscreenView, UIContext } from '@/contexts/UIContext.tsx'
@@ -54,6 +54,19 @@ const FullscreenPlayer: React.FC = () => {
   const { fullscreen, setFullscreen } = useContext(UIContext)
   const showAlbum = useOption('fullscreen', 'showAlbum')
   const { image, playerData, actions, supports } = useContext(MediaContext)
+
+  // keep the art's own shape (video thumbnails are 16:9) inside a 420x300 box
+  const [coverSize, setCoverSize] = useState({ width: 300, height: 300 })
+  useEffect(() => {
+    if (!image) return setCoverSize({ width: 300, height: 300 })
+    const img = new Image()
+    img.onload = () => {
+      const ar = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1
+      const width = Math.round(Math.min(420, 300 * ar))
+      setCoverSize({ width, height: Math.round(width / ar) })
+    }
+    img.src = image
+  }, [image])
   const shown = fullscreen !== null
   const view = fullscreen ?? 'cover'
 
@@ -131,7 +144,7 @@ const FullscreenPlayer: React.FC = () => {
         <div className={styles.body}>
           {view === 'cover' && (
             <div className={styles.now}>
-              <div className={styles.cover}>
+              <div className={styles.cover} style={coverSize}>
                 {image ? <img src={image} alt="" /> : <span className="material-icons">music_note</span>}
               </div>
               <div className={styles.info}>

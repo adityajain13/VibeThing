@@ -21,6 +21,19 @@
   --radius-sm: 14px;
 }
 
+/* pure black for OLED-style contrast; widgets keep a hairline so they don't merge */
+:root[data-theme='black'],
+:root[data-theme='black-flat'] {
+  --panel: #000;
+  --panel-hi: #121212;
+  --line: #1e1e1e;
+  --panel-edge: #1c1c1c;
+}
+
+:root[data-theme='black-flat'] {
+  --panel-edge: transparent;
+}
+
 body {
   background-color: var(--ink);
   color: var(--text);

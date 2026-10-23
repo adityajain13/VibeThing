@@ -34,6 +34,10 @@ const App: React.FC = () => {
     for (const [k, v] of Object.entries(vars)) root.setProperty(k, v)
     appliedVars.current = Object.keys(vars)
   }, [config.text, config.player.textScale])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', config.theme ?? 'dark')
+  }, [config.theme])
   const { screen, fullscreen } = useContext(UIContext)
 
   // the player widget has its own volume readout; elsewhere show a floating one

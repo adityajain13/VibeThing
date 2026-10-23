@@ -189,6 +189,8 @@ class NativeHandler extends BasePlaybackHandler {
 
   instance: NowPlaying | null = null
   current: NowPlayingMessage | null = null
+  /** when `current` arrived, so later reads can report the live position */
+  receivedAt = 0
 
   async setup(): Promise<void> {
     log('Setting up', 'Native')
@@ -201,6 +203,7 @@ class NativeHandler extends BasePlaybackHandler {
         const data = filterData(event)
         if (data) {
           this.current = event
+          this.receivedAt = Date.now()
           this.emit('playback', data)
         }
       }
@@ -225,7 +228,16 @@ class NativeHandler extends BasePlaybackHandler {
 
   async getPlayback(): Promise<PlaybackData> {
     if (!this.current) return null
-    return filterData(this.current)
+    const data = filterData(this.current)
+    // the last event's progress is as old as the event; advance it to now,
+    // otherwise a client asking later gets a stale elapsed time
+    if (data && data.isPlaying) {
+      const rate = this.current.playbackRate ?? 1
+      const advanced = data.track.duration.current + (Date.now() - this.receivedAt) * rate
+      const total = data.track.duration.total
+      data.track.duration.current = total > 0 ? Math.min(total, advanced) : advanced
+    }
+    return data
   }
 
   async play(): Promise<void> {

@@ -78,7 +78,17 @@ export function currentPosition(
   if (!data) return 0
   const { current, total } = data.track.duration
   if (!data.isPlaying) return current
-  return Math.min(total, current + (Date.now() - anchor))
+  const pos = current + (Date.now() - anchor)
+  // Only clamp to a believable length. Browser video often reports no length,
+  // or a stale one (e.g. a pre-roll ad), and clamping froze the elapsed time.
+  if (total > 0 && pos <= total + 3000) return Math.min(total, pos)
+  return pos
+}
+
+/** Whether the reported length can be trusted at this position */
+export function hasKnownLength(data: PlaybackData | null, position: number) {
+  const total = data?.track.duration.total ?? 0
+  return total > 0 && position <= total + 3000
 }
 
 const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
