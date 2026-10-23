@@ -153,33 +153,40 @@ const FullscreenPlayer: React.FC = () => {
                 {showAlbum && <p className={styles.album}>{playerData.track.album}</p>}
                 <Progress className={styles.progress} />
                 <div className={styles.controls}>
-                  <button
-                    data-toggle={playerData.shuffle}
-                    disabled={!supports('shuffle')}
-                    onClick={() => actions.shuffle(!playerData.shuffle)}
-                    aria-label="Shuffle"
-                  >
-                    <span className="material-icons">shuffle</span>
-                  </button>
-                  <button onClick={actions.skipBackward} aria-label="Previous">
-                    <span className="material-icons">skip_previous</span>
-                  </button>
+                  {/* only offer what the current player can actually do */}
+                  {supports('shuffle') && (
+                    <button
+                      data-toggle={playerData.shuffle}
+                      onClick={() => actions.shuffle(!playerData.shuffle)}
+                      aria-label="Shuffle"
+                    >
+                      <span className="material-icons">shuffle</span>
+                    </button>
+                  )}
+                  {supports('previous') && (
+                    <button onClick={actions.skipBackward} aria-label="Previous">
+                      <span className="material-icons">skip_previous</span>
+                    </button>
+                  )}
                   <button className={styles.play} onClick={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
                     <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
                   </button>
-                  <button onClick={actions.skipForward} aria-label="Next">
-                    <span className="material-icons">skip_next</span>
-                  </button>
-                  <button
-                    data-toggle={playerData.repeat !== 'off'}
-                    disabled={!supports('repeat')}
-                    onClick={() =>
-                      actions.repeat(playerData.repeat === 'off' ? 'on' : playerData.repeat === 'on' ? 'one' : 'off')
-                    }
-                    aria-label="Repeat"
-                  >
-                    <span className="material-icons">{repeatIcon}</span>
-                  </button>
+                  {supports('next') && (
+                    <button onClick={actions.skipForward} aria-label="Next">
+                      <span className="material-icons">skip_next</span>
+                    </button>
+                  )}
+                  {supports('repeat') && (
+                    <button
+                      data-toggle={playerData.repeat !== 'off'}
+                      onClick={() =>
+                        actions.repeat(playerData.repeat === 'off' ? 'on' : playerData.repeat === 'on' ? 'one' : 'off')
+                      }
+                      aria-label="Repeat"
+                    >
+                      <span className="material-icons">{repeatIcon}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

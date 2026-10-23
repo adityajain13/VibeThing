@@ -53,6 +53,14 @@ export function useRunAction() {
       }
       case 'playback': {
         const cur = playerDataRef.current
+        // buttons mapped to something this player can't do say so instead of failing silently
+        const needs: Partial<Record<string, string>> = {
+          next: 'next', previous: 'previous', shuffle: 'shuffle', repeat: 'repeat',
+          volumeUp: 'volume', volumeDown: 'volume', seekForward: 'seek', seekBackward: 'seek'
+        }
+        const need = needs[action.action]
+        if (need && cur && !cur.supportedActions.includes(need as never))
+          return ui.toast('block', "This player doesn't support that")
         switch (action.action) {
           case 'playPause':
             return actions.playPause()

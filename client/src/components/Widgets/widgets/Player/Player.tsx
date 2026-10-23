@@ -60,10 +60,10 @@ const Player: React.FC = () => {
       if (coverClicks.current === 1) {
         setCoverAction(playerDataRef.current?.isPlaying ? 'pause' : 'play_arrow')
         actions.playPause()
-      } else if (coverClicks.current === 2) {
+      } else if (coverClicks.current === 2 && supports('next')) {
         setCoverAction('skip_next')
         actions.skipForward()
-      } else {
+      } else if (coverClicks.current >= 3 && supports('previous')) {
         setCoverAction('skip_previous')
         actions.skipBackward()
       }
@@ -193,15 +193,19 @@ const Player: React.FC = () => {
             {p.showProgress && <Progress className={styles.progress} showTimes={p.showTimes} />}
             {p.showControls && (
               <div className={styles.controls}>
-                <button onMouseDown={actions.skipBackward} aria-label="Previous">
-                  <span className="material-icons">skip_previous</span>
-                </button>
+                {supports('previous') && (
+                  <button onMouseDown={actions.skipBackward} aria-label="Previous">
+                    <span className="material-icons">skip_previous</span>
+                  </button>
+                )}
                 <button className={styles.play} onMouseDown={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
                   <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
                 </button>
-                <button onMouseDown={actions.skipForward} aria-label="Next">
-                  <span className="material-icons">skip_next</span>
-                </button>
+                {supports('next') && (
+                  <button onMouseDown={actions.skipForward} aria-label="Next">
+                    <span className="material-icons">skip_next</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
