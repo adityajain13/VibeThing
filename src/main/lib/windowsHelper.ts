@@ -282,6 +282,51 @@ $source = @'
 ${CSHARP}
 '@
 Add-Type -TypeDefinition $source -ReferencedAssemblies System.Drawing
+
+# Media timeline straight from Windows (WinRT GlobalSystemMediaTransportControls),
+# used to correct position/length from the now-playing addon.
+$script:gtpMedia = $null
+$script:gtpAsTask = $null
+function Invoke-GtpAwait($op, $type, $ms) {
+  $task = $script:gtpAsTask.MakeGenericMethod($type).Invoke($null, @($op))
+  if (-not $task.Wait($ms)) { return $null }
+  return $task.Result
+}
+function Get-GtpTimeline {
+  try {
+    if ($script:gtpMedia -eq $null) {
+      Add-Type -AssemblyName System.Runtime.WindowsRuntime
+      $script:gtpAsTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
+        $_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and
+        $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation\`1' })[0]
+      $null = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType = WindowsRuntime]
+      $script:gtpMedia = Invoke-GtpAwait ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]) 4000
+    }
+    if ($script:gtpMedia -eq $null) { return '{"ok":false,"error":"no session manager"}' }
+    $s = $script:gtpMedia.GetCurrentSession()
+    if ($s -eq $null) { return '{"ok":true,"session":false}' }
+    $tl = $s.GetTimelineProperties()
+    $pi = $s.GetPlaybackInfo()
+    $props = Invoke-GtpAwait ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties]) 2000
+    $o = [ordered]@{
+      ok = $true
+      session = $true
+      app = [string]$s.SourceAppUserModelId
+      title = $(if ($props) { [string]$props.Title } else { '' })
+      status = [string]$pi.PlaybackStatus
+      rate = $(if ($pi.PlaybackRate -ne $null) { [double]$pi.PlaybackRate } else { 1 })
+      start = [double]$tl.StartTime.TotalMilliseconds
+      end = [double]$tl.EndTime.TotalMilliseconds
+      position = [double]$tl.Position.TotalMilliseconds
+      updated = [double]$tl.LastUpdatedTime.ToUnixTimeMilliseconds()
+      now = [double][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    }
+    return ($o | ConvertTo-Json -Compress)
+  } catch {
+    return '{"ok":false,"error":' + (ConvertTo-Json -Compress ([string]$_.Exception.Message)) + '}'
+  }
+}
+
 [Console]::Out.WriteLine('ready')
 [Console]::Out.Flush()
 while ($true) {
@@ -290,7 +335,8 @@ while ($true) {
   $sep = $line.IndexOf('|')
   if ($sep -lt 0) { continue }
   $id = $line.Substring(0, $sep)
-  $res = [GlanceThingPlus.Api]::Handle($line.Substring($sep + 1))
+  $cmd = $line.Substring($sep + 1)
+  if ($cmd -eq 'timeline') { $res = Get-GtpTimeline } else { $res = [GlanceThingPlus.Api]::Handle($cmd) }
   [Console]::Out.WriteLine($id + '|' + $res)
   [Console]::Out.Flush()
 }

@@ -1,5 +1,6 @@
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
-import { log } from '../utils.js'
+import { log, LogLevel } from '../utils.js'
+import { windowsHelper } from '../windowsHelper.js'
 
 import { PlaybackData, RepeatMode } from '../../types/Playback.js'
 import { createRequire } from 'node:module'
@@ -183,6 +184,24 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
   return playbackData
 }
 
+/** What Windows itself reports for the current media session (see windowsHelper) */
+interface WindowsTimeline {
+  ok: boolean
+  session?: boolean
+  error?: string
+  app?: string
+  title?: string
+  status?: string
+  rate?: number
+  start?: number
+  end?: number
+  position?: number
+  updated?: number
+  now?: number
+}
+
+const norm = (t: string | undefined) => (t ?? '').trim().toLowerCase()
+
 class NativeHandler extends BasePlaybackHandler {
   name: string = 'native'
   requiresInternet: boolean = false
@@ -191,6 +210,66 @@ class NativeHandler extends BasePlaybackHandler {
   current: NowPlayingMessage | null = null
   /** when `current` arrived, so later reads can report the live position */
   receivedAt = 0
+
+  /**
+   * Length/position read straight from Windows. The addon's values can be
+   * missing or stale for browser video (YouTube), so this corrects them.
+   */
+  timeline: { title: string; duration: number; position: number; at: number; playing: boolean } | null = null
+  private timelineTimer: NodeJS.Timeout | null = null
+  private lastSent: { duration: number; position: number; at: number } | null = null
+  private loggedFor = ''
+  private timelineErrors = 0
+
+  private async pollTimeline() {
+    const cur = this.current
+    if (!cur) return
+    const t = await windowsHelper.call<WindowsTimeline>('timeline')
+    if (!t || !t.ok) {
+      if (t?.error && this.timelineErrors++ < 3)
+        log(`Windows timeline unavailable: ${t.error}`, 'Native', LogLevel.WARN)
+      return
+    }
+    if (!t.session || norm(t.title) !== norm(cur.trackName) || !t.end || t.end <= (t.start ?? 0)) {
+      this.timeline = null
+      return
+    }
+    const start = t.start ?? 0
+    const duration = t.end - start
+    const playing = t.status === 'Playing'
+    let position = (t.position ?? 0) - start
+    // Windows gives the position as of `updated`; advance it to now
+    if (playing && t.updated && t.now) position += Math.max(0, t.now - t.updated) * (t.rate || 1)
+    position = Math.max(0, Math.min(duration, position))
+    this.timeline = { title: cur.trackName, duration, position, at: Date.now(), playing }
+
+    if (this.loggedFor !== cur.trackName) {
+      this.loggedFor = cur.trackName
+      log(
+        `Timeline for "${cur.trackName}" (${t.app}): Windows ${Math.round(position / 1000)}s / ${Math.round(duration / 1000)}s, ` +
+          `addon ${Math.round((cur.trackProgress ?? 0) / 10000 / 1000)}s / ${Math.round((cur.trackDuration ?? 0) / 10000 / 1000)}s`,
+        'Native'
+      )
+    }
+
+    // only push to the CarThing when it would otherwise be visibly wrong
+    const last = this.lastSent
+    const predicted = last ? last.position + (playing ? Date.now() - last.at : 0) : -1
+    if (!last || Math.abs(last.duration - duration) > 1000 || Math.abs(predicted - position) > 2000) {
+      const data = await this.getPlayback()
+      if (data) this.emit('playback', data)
+    }
+  }
+
+  /** Overlay the Windows timeline onto addon data for the same track */
+  private applyTimeline(data: PlaybackData) {
+    const tl = this.timeline
+    if (!data || !tl || norm(tl.title) !== norm(data.track.name) || Date.now() - tl.at > 5000) return data
+    data.track.duration.total = tl.duration
+    data.track.duration.current = Math.min(tl.duration, tl.position + (tl.playing && data.isPlaying ? Date.now() - tl.at : 0))
+    this.lastSent = { duration: tl.duration, position: data.track.duration.current, at: Date.now() }
+    return data
+  }
 
   async setup(): Promise<void> {
     log('Setting up', 'Native')
@@ -202,9 +281,10 @@ class NativeHandler extends BasePlaybackHandler {
       async (event: NowPlayingMessage) => {
         const data = filterData(event)
         if (data) {
+          if (this.current && norm(this.current.trackName) !== norm(event.trackName)) this.timeline = null
           this.current = event
           this.receivedAt = Date.now()
-          this.emit('playback', data)
+          this.emit('playback', this.applyTimeline(data))
         }
       }
     ) as NowPlaying
@@ -212,11 +292,21 @@ class NativeHandler extends BasePlaybackHandler {
     await instance.subscribe()
 
     this.instance = instance
+
+    if (windowsHelper.supported) {
+      this.timelineTimer = setInterval(() => {
+        this.pollTimeline().catch(err => log(`Timeline poll failed: ${err}`, 'Native', LogLevel.WARN))
+      }, 1000)
+    }
   }
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Native')
 
+    if (this.timelineTimer) clearInterval(this.timelineTimer)
+    this.timelineTimer = null
+    this.timeline = null
+    this.lastSent = null
     this.instance?.unsubscribe()
     this.instance = null
     this.removeAllListeners()
@@ -237,7 +327,7 @@ class NativeHandler extends BasePlaybackHandler {
       const total = data.track.duration.total
       data.track.duration.current = total > 0 ? Math.min(total, advanced) : advanced
     }
-    return data
+    return this.applyTimeline(data)
   }
 
   async play(): Promise<void> {
