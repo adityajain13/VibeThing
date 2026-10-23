@@ -44,8 +44,12 @@ const UIContextProvider = ({ children }: { children: React.ReactNode }) => {
     const onMessage = (e: MessageEvent) => {
       const msg = e.data as PreviewMessage
       if (!msg || msg.source !== PREVIEW_MESSAGE) return
-      if (typeof msg.screen === 'number') setScreenState(msg.screen)
-      if (msg.fullscreen !== undefined) setFullscreen(msg.fullscreen)
+      // the config in the same message (which may add a preview-only screen)
+      // is applied asynchronously, so pick the screen once it has landed
+      setTimeout(() => {
+        if (typeof msg.screen === 'number') setScreenState(msg.screen)
+        if (msg.fullscreen !== undefined) setFullscreen(msg.fullscreen)
+      }, 60)
     }
     window.addEventListener('message', onMessage)
     window.parent?.postMessage({ source: PREVIEW_MESSAGE, ready: true }, '*')
