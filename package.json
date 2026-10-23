@@ -1,7 +1,8 @@
 {
-  "name": "glancething",
+  "name": "vibething",
+  "productName": "VibeThing",
   "version": "0.0.21",
-  "description": "Desktop application for GlanceThing",
+  "description": "VibeThing desktop app (a customised fork of GlanceThing)",
   "main": "./out/main/index.js",
   "author": "BluDood",
   "homepage": "https://github.com/BluDood/GlanceThing",

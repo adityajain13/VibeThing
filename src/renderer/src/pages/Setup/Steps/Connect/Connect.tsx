@@ -35,7 +35,7 @@ const Connect: React.FC<ConnectProps> = ({ onStepComplete }) => {
       <h1>Start the server</h1>
       <p>
         You should now see a welcome screen on the CarThing. Start the
-        internal server and start enjoying your GlanceThing!
+        internal server and start enjoying your VibeThing!
       </p>
       {state === State.Starting ? (
         <div className={styles.state} key={'installing'}>

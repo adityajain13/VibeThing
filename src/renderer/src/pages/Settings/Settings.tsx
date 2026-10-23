@@ -1038,13 +1038,14 @@ const AboutTab: React.FC = () => {
       <div className={styles.app}>
         <img src={channel === 'nightly' ? iconNightly : icon} alt="" />
         <div className={styles.info}>
-          <h2>GlanceThing{channel === 'nightly' ? ' Nightly' : ''}</h2>
+          <h2>VibeThing{channel === 'nightly' ? ' Nightly' : ''}</h2>
           <p
             onClick={() => setTimesClicked(t => (t += 1))}
             className={styles.version}
           >
             Version {version}
           </p>
+          <p className={styles.version}>Based on GlanceThing by BluDood</p>
         </div>
       </div>
       <h2>Credits</h2>
@@ -1054,7 +1055,7 @@ const AboutTab: React.FC = () => {
           <a href="https://bludood.com" target="_blank" rel="noreferrer">
             BluDood
           </a>
-          <p>GlanceThing Developer</p>
+          <p>Creator of GlanceThing, which VibeThing is built on</p>
         </div>
       </div>
       <div className={styles.credit}>

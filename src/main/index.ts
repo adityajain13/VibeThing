@@ -79,6 +79,7 @@ import {
 import { playbackManager } from './lib/playback/playback.js'
 import { applyPatch, getPatches } from './lib/patches.js'
 import { serverManager } from './lib/server.js'
+import { migrateFromGlanceThing } from './lib/migrate.js'
 import { getLocalClientDir } from './lib/webapp.js'
 import { exportSettings, importSettings } from './lib/backup.js'
 import { geocode } from './lib/widgets/weather.js'
@@ -123,7 +124,7 @@ function createWindow(): void {
 
       new Notification({
         title: 'Still Running!',
-        body: 'GlanceThing has been minimized to the system tray, and is still running in the background!'
+        body: 'VibeThing has been minimized to the system tray, and is still running in the background!'
       }).show()
     }
     mainWindow = null
@@ -156,11 +157,12 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.on('ready', async () => {
-  log('Welcome!', 'GlanceThing')
+  log('Welcome!', 'VibeThing')
 
   const gotLock = app.requestSingleInstanceLock()
   if (!gotLock) return app.quit()
 
+  migrateFromGlanceThing()
   loadStorage()
   setLogLevel(getStorageValue('logLevel') ?? LogLevel.INFO)
 
@@ -170,8 +172,8 @@ app.on('ready', async () => {
   ) {
     setStorageValue('devMode', true)
   }
-  if (isDev()) log('Running in development mode', 'GlanceThing')
-  electronApp.setAppUserModelId(`com.bludood.${app.getName()}`)
+  if (isDev()) log('Running in development mode', 'VibeThing')
+  electronApp.setAppUserModelId(isNightly ? 'com.vibething.app.nightly' : 'com.vibething.app')
 
   const adbPath = await getAdbExecutable().catch(err => ({ err }))
 
@@ -582,7 +584,7 @@ async function setupTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: `GlanceThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`,
+      label: `VibeThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`,
       enabled: false
     },
     {
@@ -609,7 +611,7 @@ async function setupTray() {
   tray.setContextMenu(contextMenu)
 
   tray.setToolTip(
-    `GlanceThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`
+    `VibeThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`
   )
 
   tray.on('click', () => {

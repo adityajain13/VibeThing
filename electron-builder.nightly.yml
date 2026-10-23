@@ -1,5 +1,5 @@
-appId: com.bludood.glancething.nightly
-productName: GlanceThing Nightly
+appId: com.vibething.app.nightly
+productName: VibeThing Nightly
 directories:
   buildResources: build/nightly
 files:
@@ -18,7 +18,7 @@ asarUnpack:
   - resources/common/**
   - resources/nightly/**
 win:
-  executableName: GlanceThingNightly
+  executableName: VibeThingNightly
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -51,4 +51,4 @@ publish:
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
 extraMetadata:
-  name: glancething-nightly
+  name: vibething-nightly

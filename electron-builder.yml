@@ -1,5 +1,5 @@
-appId: com.bludood.glancething
-productName: GlanceThing
+appId: com.vibething.app
+productName: VibeThing
 directories:
   buildResources: build/stable
 files:
@@ -18,7 +18,7 @@ asarUnpack:
   - resources/common/**
   - resources/stable/**
 win:
-  executableName: GlanceThing
+  executableName: VibeThing
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}

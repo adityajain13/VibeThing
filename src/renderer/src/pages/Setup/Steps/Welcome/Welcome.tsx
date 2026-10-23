@@ -17,11 +17,11 @@ const Welcome: React.FC<WelcomeProps> = ({ onStepComplete }) => {
     <div className={styles.welcome}>
       <img src={channel === 'nightly' ? iconNightly : icon} alt="" />
       <h1>
-        Welcome to GlanceThing{channel === 'nightly' ? ' Nightly' : ''}!
+        Welcome to VibeThing{channel === 'nightly' ? ' Nightly' : ''}!
       </h1>
       <p>
         With only a few steps, you&apos;ll be up and running with
-        GlanceThing.
+        VibeThing.
       </p>
       <div className={styles.buttons}>
         <button onClick={onStepComplete}>Get Started</button>

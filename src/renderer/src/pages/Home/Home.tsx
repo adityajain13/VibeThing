@@ -68,7 +68,7 @@ const Home: React.FC = () => {
   return (
     <div className={styles.home}>
       <img src={channel === 'nightly' ? iconNightly : icon} alt="" />
-      <h1>GlanceThing{channel === 'nightly' ? ' Nightly' : ''}</h1>
+      <h1>VibeThing{channel === 'nightly' ? ' Nightly' : ''}</h1>
       <div className={styles.status}>
         {carThingState === CarThingState.NotFound ? (
           <>

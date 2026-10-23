@@ -8,7 +8,7 @@ interface NoneProps {
 const None: React.FC<NoneProps> = ({ onStepComplete }) => {
   return (
     <div className={styles.none}>
-      <p>This will simply disable media feedback on GlanceThing.</p>
+      <p>This will simply disable media feedback on VibeThing.</p>
       <div className={styles.buttons}>
         <button onClick={onStepComplete}>Continue</button>
       </div>

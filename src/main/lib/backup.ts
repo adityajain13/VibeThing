@@ -82,9 +82,9 @@ export async function exportSettings(): Promise<
   const date = new Date().toISOString().slice(0, 10)
   const win = BrowserWindow.getFocusedWindow()
   const opts = {
-    title: 'Export GlanceThing settings',
-    defaultPath: path.join(app.getPath('documents'), `glancething-settings-${date}.json`),
-    filters: [{ name: 'GlanceThing settings', extensions: ['json'] }]
+    title: 'Export VibeThing settings',
+    defaultPath: path.join(app.getPath('documents'), `vibething-settings-${date}.json`),
+    filters: [{ name: 'VibeThing settings', extensions: ['json'] }]
   }
   const res = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts)
   if (res.canceled || !res.filePath) return { ok: false, canceled: true }
@@ -104,9 +104,9 @@ export async function importSettings(): Promise<
 > {
   const win = BrowserWindow.getFocusedWindow()
   const opts = {
-    title: 'Import GlanceThing settings',
+    title: 'Import VibeThing settings',
     properties: ['openFile' as const],
-    filters: [{ name: 'GlanceThing settings', extensions: ['json'] }]
+    filters: [{ name: 'VibeThing settings', extensions: ['json'] }]
   }
   const res = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts)
   if (res.canceled || !res.filePaths[0]) return { ok: false, canceled: true }
@@ -118,7 +118,7 @@ export async function importSettings(): Promise<
     return { ok: false, error: 'That file isn’t valid JSON.' }
   }
   if (backup?.format !== FORMAT || typeof backup.settings !== 'object' || !backup.settings) {
-    return { ok: false, error: 'That isn’t a GlanceThing settings export.' }
+    return { ok: false, error: 'That isn’t a VibeThing (or GlanceThing custom) settings export.' }
   }
 
   // images first, so shortcuts/screensaver are ready when their settings land

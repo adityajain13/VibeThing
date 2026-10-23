@@ -77,7 +77,7 @@ export function log(text: string, scope?: string, level = LogLevel.INFO) {
   if (level < logLevel) return
 
   if (!logPath)
-    logPath = path.join(app.getPath('userData'), 'glancething.log')
+    logPath = path.join(app.getPath('userData'), 'vibething.log')
 
   const time = new Date().toLocaleTimeString([], {
     hour12: false,
@@ -226,7 +226,7 @@ export function buildUnzipCommand(src: string, dest: string) {
   }
 }
 
-export const isNightly = app.getName().endsWith('-nightly')
+export const isNightly = /nightly$/i.test(app.getName())
 
 export const resourceFolder = path.join(
   process.env.NODE_ENV === 'development'

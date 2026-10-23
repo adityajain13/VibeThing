@@ -27,7 +27,7 @@ const Playback: React.FC<PlaybackProps> = ({ onStepComplete }) => {
       <p className={styles.step}>Step 3</p>
       <h1>Setting up Playback</h1>
       <p>
-        Choose a media provider you would like to use with GlanceThing from
+        Choose a media provider you would like to use with VibeThing from
         the list below.
       </p>
       <div className={styles.providers}>

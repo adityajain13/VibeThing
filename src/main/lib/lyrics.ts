@@ -30,7 +30,7 @@ const client = axios.create({
   baseURL: 'https://lrclib.net/api',
   timeout: 8000,
   headers: {
-    'User-Agent': 'GlanceThing-Plus (https://github.com/BluDood/GlanceThing fork)'
+    'User-Agent': 'VibeThing (fork of https://github.com/BluDood/GlanceThing)'
   },
   validateStatus: () => true
 })
