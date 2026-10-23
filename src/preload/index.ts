@@ -53,7 +53,8 @@ enum IPCHandler {
   GetMixerTargets = 'getMixerTargets',
   ValidateKeys = 'validateKeys',
   GetClientConfig = 'getClientConfig',
-  GetMacros = 'getMacros'
+  GetMacros = 'getMacros',
+  HasPreviewClient = 'hasPreviewClient'
 }
 
 // Custom APIs for renderer
@@ -139,7 +140,8 @@ const api = {
   validateKeys: (keys: string) =>
     ipcRenderer.invoke(IPCHandler.ValidateKeys, keys),
   getClientConfig: () => ipcRenderer.invoke(IPCHandler.GetClientConfig),
-  getMacros: () => ipcRenderer.invoke(IPCHandler.GetMacros)
+  getMacros: () => ipcRenderer.invoke(IPCHandler.GetMacros),
+  hasPreviewClient: () => ipcRenderer.invoke(IPCHandler.HasPreviewClient)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

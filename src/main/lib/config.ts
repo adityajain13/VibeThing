@@ -3,6 +3,7 @@ import { getStorageValue } from './storage.js'
 import {
   ButtonAction,
   ClientConfig,
+  PlayerLayout,
   Macro,
   PublicMacro,
   Screen,
@@ -34,6 +35,20 @@ export const defaultScreens: Screen[] = [
 
 const none: ButtonAction = { type: 'none' }
 
+export const defaultPlayerLayout: PlayerLayout = {
+  layout: 'auto',
+  coverSize: 100,
+  coverAlign: 'center',
+  textAlign: 'left',
+  textScale: 100,
+  controlsScale: 100,
+  showProgress: true,
+  showTimes: true,
+  showControls: true,
+  showLike: true,
+  glow: true
+}
+
 export const defaultClientConfig: ClientConfig = {
   screens: defaultScreens,
   buttons: {
@@ -52,7 +67,8 @@ export const defaultClientConfig: ClientConfig = {
   volumeStep: 5,
   seekStep: 10,
   accent: 'album',
-  playerLyricsLine: true
+  playerLyricsLine: true,
+  player: defaultPlayerLayout
 }
 
 export const defaultMacros: Macro[] = [
@@ -102,6 +118,10 @@ export function getClientConfig(): ClientConfig {
     knob: {
       ...defaultClientConfig.knob,
       ...(stored.knob ?? {})
+    },
+    player: {
+      ...defaultPlayerLayout,
+      ...(stored.player ?? {})
     }
   }
 }

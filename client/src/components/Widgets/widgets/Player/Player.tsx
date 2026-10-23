@@ -78,12 +78,52 @@ const Player: React.FC = () => {
   }, [coverAction])
 
   const showLyric = config.playerLyricsLine && Boolean(lyrics?.synced?.length)
+  const p = config.player
+
+  // side-by-side: the cover is a square that fits the slot height and half its width,
+  // scaled by Cover size (Chrome 69 has no CSS min(), so measure it here)
+  const hasTrack = playerData !== null
+  const [sideCover, setSideCover] = useState<number | null>(null)
+  useEffect(() => {
+    const el = playerRef.current
+    if (!el) return
+    const measure = () => {
+      const isSide = getComputedStyle(el).flexDirection === 'row'
+      if (!isSide) return setSideCover(null)
+      const cs = getComputedStyle(el)
+      const h = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+      const w = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      setSideCover(Math.max(40, Math.floor(Math.min(h, w * 0.5) * (p.coverSize / 100))))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    const t = setTimeout(measure, 50) // after BaseWidget settles its size class
+    return () => {
+      window.removeEventListener('resize', measure)
+      clearTimeout(t)
+    }
+  }, [p.layout, p.coverSize, hasTrack])
+
+  const vars = {
+    ...(sideCover ? { '--side-cover': `${sideCover}px` } : {}),
+    '--cover-size': p.coverSize / 100,
+    '--text-scale': p.textScale / 100,
+    '--controls-scale': p.controlsScale / 100
+  } as React.CSSProperties
 
   return (
-    <BaseWidget className={styles.player} onKeyDown={onKeyDown} ref={playerRef}>
+    <BaseWidget
+      className={styles.player}
+      onKeyDown={onKeyDown}
+      ref={playerRef}
+      style={vars}
+      data-layout={p.layout}
+      data-cover-align={p.coverAlign}
+      data-text-align={p.textAlign}
+    >
       {playerData ? (
         <>
-          {image && <img className={styles.glow} src={image} alt="" />}
+          {image && p.glow && <img className={styles.glow} src={image} alt="" />}
           <button className={styles.cover} onMouseDown={handleCoverPress}>
             {image ? (
               <img src={image} alt="" />
@@ -95,12 +135,12 @@ const Player: React.FC = () => {
             </span>
           </button>
           <div className={styles.meta}>
-            <div className={styles.titleRow}>
+            <div className={styles.titleRow} data-like={p.showLike && supports('like')}>
               <div className={styles.text} onClick={() => setFullscreen('cover')}>
                 <p className={styles.name}>{playerData.track.name}</p>
                 <p className={styles.artists}>{playerData.track.artists.join(', ')}</p>
               </div>
-              {supports('like') && (
+              {p.showLike && supports('like') && (
                 <button
                   className={styles.like}
                   data-liked={playerData.track.liked === true}
@@ -118,18 +158,20 @@ const Player: React.FC = () => {
                 <LyricLine />
               </div>
             )}
-            <Progress className={styles.progress} />
-            <div className={styles.controls}>
-              <button onMouseDown={actions.skipBackward} aria-label="Previous">
-                <span className="material-icons">skip_previous</span>
-              </button>
-              <button className={styles.play} onMouseDown={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
-                <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
-              </button>
-              <button onMouseDown={actions.skipForward} aria-label="Next">
-                <span className="material-icons">skip_next</span>
-              </button>
-            </div>
+            {p.showProgress && <Progress className={styles.progress} showTimes={p.showTimes} />}
+            {p.showControls && (
+              <div className={styles.controls}>
+                <button onMouseDown={actions.skipBackward} aria-label="Previous">
+                  <span className="material-icons">skip_previous</span>
+                </button>
+                <button className={styles.play} onMouseDown={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
+                  <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
+                </button>
+                <button onMouseDown={actions.skipForward} aria-label="Next">
+                  <span className="material-icons">skip_next</span>
+                </button>
+              </div>
+            )}
           </div>
           <VolumeOverlay />
         </>

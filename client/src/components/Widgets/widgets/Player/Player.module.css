@@ -28,9 +28,13 @@
   justify-content: center;
 }
 
+.cover {
+  align-items: center;
+}
+
 .cover img,
 .placeholder {
-  height: 100%;
+  height: calc(100% * var(--cover-size, 1));
   border-radius: 16px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
 }
@@ -85,7 +89,7 @@
 }
 
 .name {
-  font-size: 23px;
+  font-size: calc(23px * var(--text-scale, 1));
   font-weight: 800;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -94,7 +98,7 @@
 }
 
 .artists {
-  font-size: 17px;
+  font-size: calc(17px * var(--text-scale, 1));
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
@@ -120,7 +124,7 @@
 }
 
 .lyric {
-  font-size: 16px;
+  font-size: calc(16px * var(--text-scale, 1));
   font-weight: 600;
   color: var(--accent);
   margin-top: 6px;
@@ -158,13 +162,13 @@
 }
 
 .controls button span {
-  font-size: 38px;
+  font-size: calc(38px * var(--controls-scale, 1));
 }
 
 .controls .play span {
-  font-size: 30px;
-  width: 54px;
-  height: 54px;
+  font-size: calc(30px * var(--controls-scale, 1));
+  width: calc(54px * var(--controls-scale, 1));
+  height: calc(54px * var(--controls-scale, 1));
   border-radius: 50%;
   background: var(--text);
   color: var(--ink);
@@ -174,21 +178,24 @@
 }
 
 /* short slot: compact horizontal layout */
-[data-h='short'] .player,
-[data-h='mid'] .player {
+[data-h='short'] .player:not([data-layout='stacked']),
+[data-h='mid'] .player:not([data-layout='stacked']),
+.player[data-layout='side'] {
   flex-direction: row;
   padding: 12px 16px;
 }
 
-[data-h='short'] .cover,
-[data-h='mid'] .cover {
+[data-h='short'] .player:not([data-layout='stacked']) .cover,
+[data-h='mid'] .player:not([data-layout='stacked']) .cover,
+.player[data-layout='side'] .cover {
   flex: none;
   height: 100%;
   margin-right: 16px;
 }
 
-[data-h='short'] .meta,
-[data-h='mid'] .meta {
+[data-h='short'] .player:not([data-layout='stacked']) .meta,
+[data-h='mid'] .player:not([data-layout='stacked']) .meta,
+.player[data-layout='side'] .meta {
   flex: 1;
   min-width: 0;
   margin-top: 0;
@@ -200,13 +207,58 @@
 }
 
 [data-h='short'] .controls button span {
-  font-size: 30px;
+  font-size: calc(30px * var(--controls-scale, 1));
 }
 
 [data-h='short'] .controls .play span {
-  width: 42px;
-  height: 42px;
-  font-size: 24px;
+  width: calc(42px * var(--controls-scale, 1));
+  height: calc(42px * var(--controls-scale, 1));
+  font-size: calc(24px * var(--controls-scale, 1));
+}
+
+/* side layout: square cover sized in Player.tsx (--side-cover) */
+[data-h='short'] .player:not([data-layout='stacked']) .cover,
+[data-h='mid'] .player:not([data-layout='stacked']) .cover,
+.player[data-layout='side'] .cover {
+  height: var(--side-cover, calc(100% * var(--cover-size, 1)));
+  width: var(--side-cover, auto);
+  align-self: center;
+}
+
+[data-h='short'] .player:not([data-layout='stacked']) .meta,
+[data-h='mid'] .player:not([data-layout='stacked']) .meta,
+.player[data-layout='side'] .meta {
+  align-self: center;
+}
+
+[data-h='short'] .player:not([data-layout='stacked']) .cover img,
+[data-h='mid'] .player:not([data-layout='stacked']) .cover img,
+.player[data-layout='side'] .cover img,
+[data-h='short'] .player:not([data-layout='stacked']) .placeholder,
+[data-h='mid'] .player:not([data-layout='stacked']) .placeholder,
+.player[data-layout='side'] .placeholder {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+/* placement */
+.player[data-cover-align='left'] .cover {
+  justify-content: flex-start;
+}
+
+.player[data-cover-align='right'] .cover {
+  justify-content: flex-end;
+}
+
+.player[data-text-align='center'] .text,
+.player[data-text-align='center'] .lyric {
+  text-align: center;
+}
+
+/* keep centred text centred when the like button sits on the right */
+.player[data-text-align='center'] .titleRow[data-like='true'] .text {
+  padding-left: 44px;
 }
 
 .notPlaying {

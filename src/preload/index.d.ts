@@ -83,6 +83,7 @@ declare global {
       validateKeys: (keys: string) => Promise<boolean>
       getClientConfig: () => Promise<unknown>
       getMacros: () => Promise<unknown[]>
+      hasPreviewClient: () => Promise<boolean>
     }
   }
 }

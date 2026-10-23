@@ -17,7 +17,9 @@ import {
 } from 'electron'
 
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { join } from 'path'
+import path, { join } from 'path'
+import fs from 'fs'
+import { pathToFileURL } from 'url'
 
 import {
   getPlaybackHandlerConfig,
@@ -78,6 +80,7 @@ import { playbackManager } from './lib/playback/playback.js'
 import { applyPatch, getPatches } from './lib/patches.js'
 import { getLatestVersion } from './lib/update.js'
 import { serverManager } from './lib/server.js'
+import { getLocalClientDir } from './lib/webapp.js'
 import { geocode } from './lib/widgets/weather.js'
 import { listMixerTargets } from './lib/widgets/mixer.js'
 import { runMacroDefinition } from './lib/macros.js'
@@ -147,6 +150,11 @@ app.on('second-instance', () => {
   }
 })
 
+// serves the CarThing client to the desktop app's live preview
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'gtpreview', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+])
+
 app.on('ready', async () => {
   log('Welcome!', 'GlanceThing')
 
@@ -194,6 +202,20 @@ app.on('ready', async () => {
     const path = getShortcutImagePath(name.split('?')[0])
     if (!path) return new Response(null, { status: 404 })
     return net.fetch(`file://${path}`)
+  })
+
+  protocol.handle('gtpreview', req => {
+    const dir = getLocalClientDir()
+    if (!dir) return new Response('no local client build', { status: 404 })
+    // the client is built for /usr/share/qt-superbird-app/webapp/ on the device
+    let rel = decodeURIComponent(new URL(req.url).pathname)
+      .replace(/^\/usr\/share\/qt-superbird-app\/webapp/, '')
+      .replace(/^\/+/, '')
+    if (!rel) rel = 'index.html'
+    const file = path.resolve(dir, rel)
+    if (!file.startsWith(path.resolve(dir)) || !fs.existsSync(file))
+      return new Response(null, { status: 404 })
+    return net.fetch(pathToFileURL(file).toString())
   })
 
   if (getStorageValue('launchMinimized') !== true) createWindow()
@@ -260,7 +282,8 @@ enum IPCHandler {
   GetMixerTargets = 'getMixerTargets',
   ValidateKeys = 'validateKeys',
   GetClientConfig = 'getClientConfig',
-  GetMacros = 'getMacros'
+  GetMacros = 'getMacros',
+  HasPreviewClient = 'hasPreviewClient'
 }
 
 async function setupIpcHandlers() {
@@ -547,6 +570,8 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.GetClientConfig, () => getClientConfig())
 
   ipcMain.handle(IPCHandler.GetMacros, () => getMacros())
+
+  ipcMain.handle(IPCHandler.HasPreviewClient, () => getLocalClientDir() !== null)
 }
 
 async function setupTray() {

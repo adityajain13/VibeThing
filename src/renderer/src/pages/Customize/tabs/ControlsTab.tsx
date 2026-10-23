@@ -1,7 +1,5 @@
 import React from 'react'
 
-import Switch from '@/components/Switch/Switch.js'
-
 import type {
   ButtonAction,
   ClientConfig,
@@ -175,16 +173,6 @@ const ControlsTab: React.FC<Props> = ({ config, update, macros, apps }) => {
               />
             )}
           </div>
-        </div>
-        <div className={styles.field}>
-          <label>
-            Lyric line under the track
-            <small>Shows the current synced lyric on the Now playing widget</small>
-          </label>
-          <Switch
-            value={config.playerLyricsLine}
-            onChange={v => update(c => ({ ...c, playerLyricsLine: v }))}
-          />
         </div>
       </section>
     </div>

@@ -23,7 +23,29 @@ export const defaultConfig: FullConfig = {
   seekStep: 10,
   accent: 'album',
   playerLyricsLine: true,
+  player: {
+    layout: 'auto',
+    coverSize: 100,
+    coverAlign: 'center',
+    textAlign: 'left',
+    textScale: 100,
+    controlsScale: 100,
+    showProgress: true,
+    showTimes: true,
+    showControls: true,
+    showLike: true,
+    glow: true
+  },
   macros: []
+}
+
+/** Fill in fields an older desktop app (or cache) might not send */
+function withDefaults(data: Partial<FullConfig>): FullConfig {
+  return {
+    ...defaultConfig,
+    ...data,
+    player: { ...defaultConfig.player, ...(data.player ?? {}) }
+  }
 }
 
 const ConfigContext = createContext<FullConfig>(defaultConfig)
@@ -34,7 +56,7 @@ const ConfigContextProvider = ({ children }: { children: React.ReactNode }) => {
     // last known config survives reloads so the layout doesn't flash
     try {
       const cached = localStorage.getItem('gtp-config')
-      if (cached) return { ...defaultConfig, ...JSON.parse(cached) }
+      if (cached) return withDefaults(JSON.parse(cached))
     } catch {
       /* ignore */
     }
@@ -47,7 +69,7 @@ const ConfigContextProvider = ({ children }: { children: React.ReactNode }) => {
     const listener = (e: MessageEvent) => {
       const { type, data } = JSON.parse(e.data)
       if (type !== 'config' || !data) return
-      setConfig({ ...defaultConfig, ...data })
+      setConfig(withDefaults(data))
       try {
         localStorage.setItem('gtp-config', JSON.stringify(data))
       } catch {

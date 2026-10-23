@@ -51,6 +51,26 @@ export interface ButtonMapping {
   hold: ButtonAction
 }
 
+export interface PlayerLayout {
+  /** auto picks by widget height; stacked = cover above text; side = cover left */
+  layout: 'auto' | 'stacked' | 'side'
+  /** Cover size as a percentage of the space available to it (40-100) */
+  coverSize: number
+  /** Horizontal placement of the cover in the stacked layout */
+  coverAlign: 'left' | 'center' | 'right'
+  textAlign: 'left' | 'center'
+  /** Percent scale for track title / artist / lyric line (70-150) */
+  textScale: number
+  /** Percent scale for the playback buttons (70-150) */
+  controlsScale: number
+  showProgress: boolean
+  showTimes: boolean
+  showControls: boolean
+  showLike: boolean
+  /** Blurred album-art glow behind the widget */
+  glow: boolean
+}
+
 export interface ClientConfig {
   screens: Screen[]
   buttons: Record<PresetKey, ButtonMapping>
@@ -68,6 +88,7 @@ export interface ClientConfig {
   accent: string
   /** Show the synced lyric line under the track on the home player */
   playerLyricsLine: boolean
+  player: PlayerLayout
 }
 
 export type MacroStep =

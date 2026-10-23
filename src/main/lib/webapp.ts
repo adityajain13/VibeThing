@@ -92,6 +92,18 @@ export async function getWebAppDir() {
   return extractPath
 }
 
+/** A client build available on this PC without downloading (for previews) */
+export function getLocalClientDir(): string | null {
+  const candidates = [
+    app.isPackaged ? path.join(process.resourcesPath, 'client') : null,
+    path.join(process.cwd(), 'client/dist'),
+    hasCustomWebApp() ? path.join(app.getPath('userData'), 'customClient') : null
+  ]
+  for (const dir of candidates)
+    if (dir && fs.existsSync(path.join(dir, 'index.html'))) return dir
+  return null
+}
+
 export function hasCustomWebApp() {
   const userData = app.getPath('userData')
   const clientFolder = path.join(userData, 'customClient')

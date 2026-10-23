@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
 
 import { ConfigContext } from './ConfigContext.tsx'
+import { isPreview, PREVIEW_MESSAGE, PreviewMessage } from '@/lib/preview.ts'
 
 export type FullscreenView = 'cover' | 'lyrics' | 'queue'
 
@@ -36,6 +37,20 @@ const UIContextProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (screen >= count) setScreenState(0)
   }, [screen, count])
+
+  // the desktop app's preview drives which screen / view is shown
+  useEffect(() => {
+    if (!isPreview) return
+    const onMessage = (e: MessageEvent) => {
+      const msg = e.data as PreviewMessage
+      if (!msg || msg.source !== PREVIEW_MESSAGE) return
+      if (typeof msg.screen === 'number') setScreenState(msg.screen)
+      if (msg.fullscreen !== undefined) setFullscreen(msg.fullscreen)
+    }
+    window.addEventListener('message', onMessage)
+    window.parent?.postMessage({ source: PREVIEW_MESSAGE, ready: true }, '*')
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
 
   function setScreen(index: number) {
     if (index < 0 || index >= count) return
