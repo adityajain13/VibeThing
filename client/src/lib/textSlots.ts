@@ -157,6 +157,16 @@ export const TEXT_GROUPS: TextGroup[] = [
     ]
   },
   {
+    id: 'timer',
+    label: 'Timer',
+    icon: 'timer',
+    widget: 'timer',
+    slots: [
+      { key: 'digits', label: 'Time', size: 64, weight: 800 },
+      { key: 'label', label: 'Buttons and labels', size: 14, weight: 700 }
+    ]
+  },
+  {
     id: 'macros',
     label: 'Macros',
     icon: 'bolt',

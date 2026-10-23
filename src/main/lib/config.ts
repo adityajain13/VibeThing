@@ -21,7 +21,8 @@ export const ALL_WIDGETS: WidgetId[] = [
   'calendar',
   'mixer',
   'macros',
-  'clock'
+  'clock',
+  'timer'
 ]
 
 export const defaultScreens: Screen[] = [

@@ -15,6 +15,7 @@ import * as screensaver from './screensaver.js'
 import * as sleep from './sleep.js'
 import * as subscribe from './subscribe.js'
 import * as time from './time.js'
+import * as timer from './timer.js'
 import * as update from './update.js'
 import * as version from './version.js'
 import * as wake from './wake.js'
@@ -35,6 +36,7 @@ export const handlers: Handler[] = [
   sleep,
   subscribe,
   time,
+  timer,
   update,
   version,
   wake

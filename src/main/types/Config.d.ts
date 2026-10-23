@@ -12,6 +12,7 @@ export type WidgetId =
   | 'mixer'
   | 'macros'
   | 'clock'
+  | 'timer'
 
 export interface Screen {
   id: string

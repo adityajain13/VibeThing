@@ -47,6 +47,11 @@ export const WIDGETS: Record<
     icon: 'memory',
     hint: 'CPU, RAM, GPU and network'
   },
+  timer: {
+    label: 'Timer',
+    icon: 'timer',
+    hint: 'Timer and stopwatch, set with the dial'
+  },
   mixer: {
     label: 'Volume mixer',
     icon: 'volume_up',

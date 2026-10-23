@@ -8,6 +8,7 @@ import System from '@/components/Widgets/widgets/System/System.tsx'
 import Calendar from '@/components/Widgets/widgets/Calendar/Calendar.tsx'
 import Mixer from '@/components/Widgets/widgets/Mixer/Mixer.tsx'
 import Macros from '@/components/Widgets/widgets/Macros/Macros.tsx'
+import Timer from '@/components/Widgets/widgets/Timer/Timer.tsx'
 
 import { Topic } from '@/contexts/TopicsContext.tsx'
 import { WidgetId } from '@/types/Config.js'
@@ -22,5 +23,6 @@ export const widgets: Record<WidgetId, { component: React.FC; topic?: Topic; wei
   system: { component: System, topic: 'system' },
   calendar: { component: Calendar, topic: 'calendar' },
   mixer: { component: Mixer, topic: 'mixer' },
-  macros: { component: Macros }
+  macros: { component: Macros },
+  timer: { component: Timer }
 }

@@ -16,6 +16,7 @@ import Toast from '@/components/Toast/Toast.tsx'
 import Menu from '@/components/Menu/Menu.tsx'
 import AutoSwitch from '@/components/AutoSwitch.tsx'
 import NightClock from '@/components/NightClock/NightClock.tsx'
+import TimerAlerts from '@/components/TimerAlerts.tsx'
 
 import { textStyleVars } from '@/lib/textSlots.ts'
 
@@ -56,6 +57,7 @@ const App: React.FC = () => {
       <InputController />
       <AutoSwitch />
       <NightClock />
+      <TimerAlerts />
       <Toast />
       <LoadingScreen />
       <UpdateScreen />
