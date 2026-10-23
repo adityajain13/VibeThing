@@ -54,7 +54,9 @@ enum IPCHandler {
   ValidateKeys = 'validateKeys',
   GetClientConfig = 'getClientConfig',
   GetMacros = 'getMacros',
-  HasPreviewClient = 'hasPreviewClient'
+  HasPreviewClient = 'hasPreviewClient',
+  ExportSettings = 'exportSettings',
+  ImportSettings = 'importSettings'
 }
 
 // Custom APIs for renderer
@@ -141,7 +143,9 @@ const api = {
     ipcRenderer.invoke(IPCHandler.ValidateKeys, keys),
   getClientConfig: () => ipcRenderer.invoke(IPCHandler.GetClientConfig),
   getMacros: () => ipcRenderer.invoke(IPCHandler.GetMacros),
-  hasPreviewClient: () => ipcRenderer.invoke(IPCHandler.HasPreviewClient)
+  hasPreviewClient: () => ipcRenderer.invoke(IPCHandler.HasPreviewClient),
+  exportSettings: () => ipcRenderer.invoke(IPCHandler.ExportSettings),
+  importSettings: () => ipcRenderer.invoke(IPCHandler.ImportSettings)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

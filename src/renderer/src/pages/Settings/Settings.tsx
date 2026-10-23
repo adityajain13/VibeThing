@@ -359,8 +359,72 @@ const GeneralTab: React.FC = () => {
           description="Run the playback setup again to change how playback is handled."
           onClick={() => navigate('/setup?step=3')}
         />
+        <BackupSetting />
       </div>
     )
+  )
+}
+
+const BackupSetting: React.FC = () => {
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+
+  async function run(kind: 'export' | 'import') {
+    setBusy(true)
+    setStatus(null)
+    const res =
+      kind === 'export'
+        ? await window.api.exportSettings()
+        : await window.api.importSettings()
+    setBusy(false)
+    if (!res.ok) {
+      if (!res.canceled)
+        setStatus({ type: 'error', message: res.error ?? 'Something went wrong.' })
+      return
+    }
+    setStatus({
+      type: 'success',
+      message:
+        kind === 'export'
+          ? `Saved ${res.count} settings to ${'path' in res ? res.path : 'file'}`
+          : `Imported ${res.count} settings and sent them to your CarThing.`
+    })
+  }
+
+  return (
+    <div className={styles.screensaverSettings}>
+      <div className={styles.header}>
+        <div className={styles.text}>
+          <p className={styles.label}>Back up settings</p>
+          <p className={styles.description}>
+            Screens, buttons, macros, appearance, app shortcuts, weather,
+            calendars and the screensaver image. Your Spotify login isn’t
+            included.
+          </p>
+        </div>
+      </div>
+      <div className={styles.actions}>
+        <button disabled={busy} onClick={() => run('export')} style={{ gap: 6, alignItems: 'center' }}>
+          <span className="material-icons">file_download</span>
+          Export
+        </button>
+        <button disabled={busy} onClick={() => run('import')} style={{ gap: 6, alignItems: 'center' }}>
+          <span className="material-icons">file_upload</span>
+          Import
+        </button>
+      </div>
+      {status && (
+        <div className={styles.status} data-type={status.type}>
+          <span className="material-icons">
+            {status.type === 'success' ? 'check_circle' : 'error'}
+          </span>
+          {status.message}
+        </div>
+      )}
+    </div>
   )
 }
 

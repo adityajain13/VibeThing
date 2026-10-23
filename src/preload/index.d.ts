@@ -84,6 +84,12 @@ declare global {
       getClientConfig: () => Promise<unknown>
       getMacros: () => Promise<unknown[]>
       hasPreviewClient: () => Promise<boolean>
+      exportSettings: () => Promise<
+        { ok: true; path: string; count: number } | { ok: false; canceled?: boolean; error?: string }
+      >
+      importSettings: () => Promise<
+        { ok: true; count: number } | { ok: false; canceled?: boolean; error?: string }
+      >
     }
   }
 }

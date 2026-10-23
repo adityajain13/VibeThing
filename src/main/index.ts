@@ -80,6 +80,7 @@ import { playbackManager } from './lib/playback/playback.js'
 import { applyPatch, getPatches } from './lib/patches.js'
 import { serverManager } from './lib/server.js'
 import { getLocalClientDir } from './lib/webapp.js'
+import { exportSettings, importSettings } from './lib/backup.js'
 import { geocode } from './lib/widgets/weather.js'
 import { listMixerTargets } from './lib/widgets/mixer.js'
 import { runMacroDefinition } from './lib/macros.js'
@@ -282,7 +283,9 @@ enum IPCHandler {
   ValidateKeys = 'validateKeys',
   GetClientConfig = 'getClientConfig',
   GetMacros = 'getMacros',
-  HasPreviewClient = 'hasPreviewClient'
+  HasPreviewClient = 'hasPreviewClient',
+  ExportSettings = 'exportSettings',
+  ImportSettings = 'importSettings'
 }
 
 async function setupIpcHandlers() {
@@ -562,6 +565,10 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.GetMacros, () => getMacros())
 
   ipcMain.handle(IPCHandler.HasPreviewClient, () => getLocalClientDir() !== null)
+
+  ipcMain.handle(IPCHandler.ExportSettings, () => exportSettings())
+
+  ipcMain.handle(IPCHandler.ImportSettings, () => importSettings())
 }
 
 async function setupTray() {
