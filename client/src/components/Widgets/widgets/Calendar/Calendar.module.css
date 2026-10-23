@@ -1,5 +1,6 @@
 .calendar {
   flex-direction: column;
+  position: relative;
 }
 
 .list {
@@ -80,4 +81,104 @@
   font-size: 17px;
   font-weight: 600;
   text-align: center;
+}
+
+.event[data-tappable='true'] {
+  cursor: pointer;
+}
+
+.when {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.countdown {
+  font-size: calc(13px * var(--t-calendar-s, 1) * var(--t-calendar-time-s, 1));
+  font-weight: 700;
+  color: var(--accent);
+  margin-top: 1px;
+}
+
+.countdown[data-now='true'] {
+  color: var(--on-accent);
+  background: var(--accent);
+  padding: 1px 7px;
+  border-radius: 9px;
+}
+
+/* tap-for-details overlay, fills the widget */
+.detail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  background: var(--panel);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  animation: detailIn 180ms ease;
+  overflow-y: auto;
+}
+
+.detailBar {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.detailTitle {
+  font-size: calc(24px * var(--t-calendar-s, 1) * var(--t-calendar-title-s, 1));
+  font-weight: var(--t-calendar-title-w, 700);
+  line-height: 1.2;
+}
+
+.detailTime {
+  margin-top: 8px;
+  font-size: calc(18px * var(--t-calendar-s, 1) * var(--t-calendar-time-s, 1));
+  font-weight: var(--t-calendar-time-w, 700);
+  color: var(--accent);
+}
+
+.detailLocation {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: calc(16px * var(--t-calendar-s, 1) * var(--t-calendar-location-s, 1));
+  font-weight: var(--t-calendar-location-w, 500);
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.detailLocation :global(.material-icons) {
+  font-size: 20px;
+  margin-top: 1px;
+}
+
+.detailHint {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: 13px;
+  color: var(--faint);
+}
+
+@keyframes detailIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.when .time {
+  margin-left: 0;
 }

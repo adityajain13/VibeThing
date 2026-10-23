@@ -124,7 +124,9 @@ export const TEXT_GROUPS: TextGroup[] = [
       { key: 'showLocation', label: 'Event locations' },
       { key: 'showTime', label: 'Event times' },
       { key: 'showDayLabels', label: 'Day headings' },
-      { key: 'showColor', label: 'Calendar colour bar' }
+      { key: 'showColor', label: 'Calendar colour bar' },
+      { key: 'showCountdown', label: 'Countdown ("in 25 min")', default: false },
+      { key: 'tapDetails', label: 'Tap an event for details', default: false }
     ]
   },
   {
