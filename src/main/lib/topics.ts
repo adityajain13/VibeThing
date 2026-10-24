@@ -96,13 +96,6 @@ export async function setSubscriptions(
 }
 
 /** Restart a running provider, e.g. after its settings changed */
-export async function restartProvider(topic: string) {
-  const provider = providers.get(topic)
-  if (!provider || !running.has(topic)) return
-  await provider.stop()
-  await provider.start()
-}
-
 export async function stopAllProviders() {
   for (const topic of running) await providers.get(topic)?.stop()
   running.clear()

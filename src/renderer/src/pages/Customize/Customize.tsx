@@ -10,10 +10,11 @@ import ControlsTab from './tabs/ControlsTab.js'
 import MacrosTab from './tabs/MacrosTab.js'
 import WidgetsTab from './tabs/WidgetsTab.js'
 import BehaviourTab from './tabs/BehaviourTab.js'
+import DeviceTab from './tabs/DeviceTab.js'
 
 import styles from './Customize.module.css'
 
-type Tab = 'screens' | 'appearance' | 'behaviour' | 'controls' | 'macros' | 'widgets'
+type Tab = 'screens' | 'appearance' | 'behaviour' | 'controls' | 'macros' | 'widgets' | 'device'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'screens', label: 'Screens', icon: 'dashboard' },
@@ -21,7 +22,8 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'behaviour', label: 'Behaviour', icon: 'auto_mode' },
   { id: 'controls', label: 'Buttons & knob', icon: 'gamepad' },
   { id: 'macros', label: 'Macros', icon: 'bolt' },
-  { id: 'widgets', label: 'Widget data', icon: 'tune' }
+  { id: 'widgets', label: 'Widget data', icon: 'tune' },
+  { id: 'device', label: 'Device', icon: 'tablet' }
 ]
 
 export interface Shortcut {
@@ -192,6 +194,8 @@ const Customize: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
             />
           ) : tab === 'macros' ? (
             <MacrosTab macros={macros} update={updateMacros} apps={apps} />
+          ) : tab === 'device' ? (
+            <DeviceTab />
           ) : (
             <WidgetsTab />
           )}

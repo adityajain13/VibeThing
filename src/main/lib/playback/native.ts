@@ -286,10 +286,13 @@ class NativeHandler extends BasePlaybackHandler {
   }
   private loggedFor = ''
   private timelineErrors = 0
+  private timelineSkips = 0
 
   private async pollTimeline() {
     const cur = this.current
-    if (!cur) return
+    // VLC owns the card, or nothing is playing: no need to ask Windows every second
+    if (!cur || this.vlcActive) return
+    if (!cur.isPlaying && this.timeline && this.timelineSkips++ % 5 !== 0) return
     const t = await windowsHelper.call<WindowsTimeline>('timeline')
     if (!t || !t.ok) {
       if (t?.error && this.timelineErrors++ < 3)

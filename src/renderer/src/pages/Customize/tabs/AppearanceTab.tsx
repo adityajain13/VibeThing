@@ -18,6 +18,7 @@ import {
 
 import type { Updater } from '../Customize.js'
 
+import Segmented from '../Segmented.js'
 import styles from '../Customize.module.css'
 
 interface Props {
@@ -48,27 +49,6 @@ const COLOURS: TextGroup = { id: 'colours', label: 'Colours', icon: 'palette', s
 const GROUPS: TextGroup[] = [COLOURS, ...TEXT_GROUPS]
 
 const ACCENT_PRESETS = ['#1ed760', '#6ea8ff', '#ff7a59', '#f5c211', '#c061cb', '#ff5c8a', '#eef0f2']
-
-function Segmented<T extends string>({
-  value,
-  options,
-  onChange
-}: {
-  value: T
-  options: { value: T; label: string; icon?: string }[]
-  onChange: (v: T) => void
-}) {
-  return (
-    <div className={styles.segmented}>
-      {options.map(o => (
-        <button key={o.value} data-active={value === o.value} onClick={() => onChange(o.value)}>
-          {o.icon && <span className="material-icons">{o.icon}</span>}
-          {o.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 const Slider: React.FC<{
   label: string

@@ -161,11 +161,3 @@ export function getPublicMacros(): PublicMacro[] {
     color
   }))
 }
-
-/** Widgets that appear on any screen, used to decide what data to collect */
-export function getUsedWidgets(): Set<WidgetId> {
-  const used = new Set<WidgetId>()
-  for (const screen of getClientConfig().screens)
-    for (const col of screen.columns) for (const w of col) used.add(w)
-  return used
-}
