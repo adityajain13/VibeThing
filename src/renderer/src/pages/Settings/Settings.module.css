@@ -446,3 +446,9 @@
 .customPort .notice[data-type='error'] {
   color: #f00;
 }
+
+.credit .info .creditName {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}

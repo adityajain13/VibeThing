@@ -60,7 +60,8 @@ enum IPCHandler {
   GetPreviewConnection = 'getPreviewConnection',
   GetVlcSettings = 'getVlcSettings',
   SaveVlcSettings = 'saveVlcSettings',
-  TestVlc = 'testVlc'
+  TestVlc = 'testVlc',
+  QuitApp = 'quitApp'
 }
 
 // Custom APIs for renderer
@@ -153,7 +154,8 @@ const api = {
   getPreviewConnection: () => ipcRenderer.invoke(IPCHandler.GetPreviewConnection),
   getVlcSettings: () => ipcRenderer.invoke(IPCHandler.GetVlcSettings),
   saveVlcSettings: (s: unknown) => ipcRenderer.invoke(IPCHandler.SaveVlcSettings, s),
-  testVlc: (s: unknown) => ipcRenderer.invoke(IPCHandler.TestVlc, s)
+  testVlc: (s: unknown) => ipcRenderer.invoke(IPCHandler.TestVlc, s),
+  quitApp: () => ipcRenderer.invoke(IPCHandler.QuitApp)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

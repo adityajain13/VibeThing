@@ -10,6 +10,7 @@ import styles from './Settings.module.css'
 
 import icon from '@/assets/icon.png'
 import iconNightly from '@/assets/icon-nightly.png'
+import adij13 from '@/assets/adij13.png'
 import { useNavigate } from 'react-router-dom'
 import { ChannelContext } from '@/contexts/ChannelContext.js'
 
@@ -360,6 +361,18 @@ const GeneralTab: React.FC = () => {
           onClick={() => navigate('/setup?step=3')}
         />
         <BackupSetting />
+        <div className={styles.buttonSetting}>
+          <div className={styles.text}>
+            <p className={styles.label}>Quit VibeThing</p>
+            <p className={styles.description}>
+              Fully exit instead of staying in the tray. The CarThing loses its
+              connection until you open VibeThing again.
+            </p>
+          </div>
+          <button data-type="danger" onClick={() => window.api.quitApp()}>
+            <span className="material-icons">power_settings_new</span>
+          </button>
+        </div>
       </div>
     )
   )
@@ -1050,12 +1063,19 @@ const AboutTab: React.FC = () => {
       </div>
       <h2>Credits</h2>
       <div className={styles.credit}>
+        <img src={adij13} alt="" />
+        <div className={styles.info}>
+          <span className={styles.creditName}>AdiJ13</span>
+          <p>Creator of VibeThing, based on GlanceThing</p>
+        </div>
+      </div>
+      <div className={styles.credit}>
         <img src="https://api.bludood.com/avatar?size=48" alt="" />
         <div className={styles.info}>
           <a href="https://bludood.com" target="_blank" rel="noreferrer">
             BluDood
           </a>
-          <p>Creator of GlanceThing, which VibeThing is built on</p>
+          <p>GlanceThing Developer</p>
         </div>
       </div>
       <div className={styles.credit}>

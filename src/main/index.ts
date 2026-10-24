@@ -296,7 +296,8 @@ enum IPCHandler {
   GetPreviewConnection = 'getPreviewConnection',
   GetVlcSettings = 'getVlcSettings',
   SaveVlcSettings = 'saveVlcSettings',
-  TestVlc = 'testVlc'
+  TestVlc = 'testVlc',
+  QuitApp = 'quitApp'
 }
 
 async function setupIpcHandlers() {
@@ -606,6 +607,8 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.TestVlc, (_e, s: { port: number; password?: string }) =>
     testVlc(Number(s.port) || 8080, typeof s.password === 'string' ? s.password : ((getStorageValue('vlcPassword', true) as string) ?? ''))
   )
+
+  ipcMain.handle(IPCHandler.QuitApp, () => app.quit())
 
   // lets the Customize preview read live data from our own server (read-only)
   ipcMain.handle(IPCHandler.GetPreviewConnection, () => {
