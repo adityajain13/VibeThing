@@ -34,6 +34,11 @@ let state: TimerState = {
 }
 let watch: ReturnType<typeof setInterval> | null = null
 
+const DIAL_STEPS = [1000, 5000, 10000, 30000, 60000]
+const DIAL_TICKS_PER_STEP = 5
+const DIAL_PAUSE_MS = 600
+const dial = { count: 0, last: 0, dir: 1 as 1 | -1, lastStep: 0 }
+
 function set(patch: Partial<TimerState>) {
   state = { ...state, ...patch }
   listeners.forEach(l => l())
@@ -93,12 +98,34 @@ export const timer = {
     if (state.mode === 'timer') set({ endsAt: null, remainingMs: state.setMs, done: false })
     else set({ swStartedAt: null, swAccumMs: 0 })
   },
-  /** dial / presets while the timer is stopped */
+  /** presets / fixed nudges while the timer is stopped */
   adjust(deltaMs: number) {
     if (state.mode !== 'timer' || state.endsAt !== null) return
-    const next = Math.max(15 * 1000, Math.min(12 * 60 * 60 * 1000, (state.done ? state.setMs : state.remainingMs) + deltaMs))
+    const next = Math.max(1000, Math.min(12 * 60 * 60 * 1000, (state.done ? state.setMs : state.remainingMs) + deltaMs))
     set({ setMs: next, remainingMs: next, done: false })
   },
+  /**
+   * One dial click. Keep turning and the step grows: 1s, 5s, 10s, 30s, then
+   * 1 min, snapping to that step so values stay round. A pause or a change
+   * of direction starts again at 1s. Returns the step used (ms), or 0.
+   */
+  dialTick(dir: 1 | -1): number {
+    if (state.mode !== 'timer' || state.endsAt !== null) return 0
+    const now = Date.now()
+    if (now - dial.last > DIAL_PAUSE_MS || dir !== dial.dir) dial.count = 0
+    dial.count++
+    dial.last = now
+    dial.dir = dir
+    const step = DIAL_STEPS[Math.min(DIAL_STEPS.length - 1, Math.floor((dial.count - 1) / DIAL_TICKS_PER_STEP))]
+    const cur = state.done ? state.setMs : state.remainingMs
+    // move to the next multiple of the step in that direction
+    let next = dir > 0 ? Math.floor(cur / step) * step + step : Math.ceil(cur / step) * step - step
+    next = Math.max(1000, Math.min(12 * 60 * 60 * 1000, next))
+    set({ setMs: next, remainingMs: next, done: false })
+    dial.lastStep = step
+    return step
+  },
+  lastDialStep: () => (Date.now() - dial.last < 1200 ? dial.lastStep : 0),
   setLength(ms: number) {
     if (state.mode !== 'timer') return
     set({ setMs: ms, remainingMs: ms, endsAt: null, done: false })

@@ -14,7 +14,9 @@ const HANDS_OFF_MS = 20 * 1000
 const AutoSwitch: React.FC = () => {
   const { screens, behaviour } = useContext(ConfigContext)
   const { playerData } = useContext(MediaContext)
-  const { screen, setScreen, fullscreen } = useContext(UIContext)
+  const { screen, setScreen, fullscreen, setFullscreen } = useContext(UIContext)
+  // fullscreen we opened ourselves, so idle can close it again
+  const openedFullscreen = useRef(false)
   const lastTouch = useRef(0)
   const wasPlaying = useRef<boolean | null>(null)
   const stoppedAt = useRef<number | null>(null)
@@ -44,6 +46,10 @@ const AutoSwitch: React.FC = () => {
     wasPlaying.current = playing
     if (!cfg.enabled || !started || fullscreen) return
     if (Date.now() - lastTouch.current < HANDS_OFF_MS) return
+    if (cfg.playScreen === 'fullscreen') {
+      openedFullscreen.current = true
+      return setFullscreen('cover')
+    }
     if (playIndex >= 0 && playIndex !== screen) setScreen(playIndex)
     // only react to play/pause changes, not to every screen or config change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,7 +61,13 @@ const AutoSwitch: React.FC = () => {
     const t = setInterval(() => {
       const idleMs = cfg.idleMinutes * 60 * 1000
       if (stoppedAt.current === null || Date.now() - stoppedAt.current < idleMs) return
-      if (Date.now() - lastTouch.current < idleMs || fullscreen) return
+      if (Date.now() - lastTouch.current < idleMs) return
+      // close the fullscreen player only if auto-switch opened it
+      if (fullscreen) {
+        if (!openedFullscreen.current) return
+        openedFullscreen.current = false
+        setFullscreen(null)
+      }
       if (screen !== idleIndex) setScreen(idleIndex)
     }, 15 * 1000)
     return () => clearInterval(t)

@@ -75,7 +75,7 @@ export interface PlayerLayout {
 export interface Behaviour {
   autoSwitch: {
     enabled: boolean
-    /** screen id to show when playback starts, or 'auto' = first with Now playing */
+    /** screen id to show when playback starts, 'auto' = first with Now playing, or 'fullscreen' */
     playScreen: string
     /** screen id to fall back to after being paused/idle, or 'none' */
     idleScreen: string

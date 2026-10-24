@@ -1,3 +1,4 @@
+import { timer } from '@/lib/timerStore.ts'
 import { useContext, useEffect, useRef } from 'react'
 
 import { AppBlurContext } from '@/contexts/AppBlurContext.tsx'
@@ -85,6 +86,10 @@ const InputController: React.FC = () => {
       if (blurred || ui.fullscreen || !isIdle() || e.deltaX === 0) return
       e.preventDefault()
       const dir = e.deltaX > 0 ? 1 : -1
+
+      // on a screen with the Timer, the dial sets it while it's stopped
+      const onTimerScreen = config.screens[ui.screen]?.columns.some(c => c.includes('timer'))
+      if (onTimerScreen && timer.dialTick(dir)) return
 
       if (config.knob.idle === 'volume') actions.changeVolume(dir)
       else if (config.knob.idle === 'screens') {

@@ -121,3 +121,10 @@
     opacity: 0.45;
   }
 }
+
+.step {
+  margin-top: 6px;
+  font-size: calc(14px * var(--t-timer-s, 1) * var(--t-timer-label-s, 1));
+  font-weight: var(--t-timer-label-w, 700);
+  color: var(--accent);
+}

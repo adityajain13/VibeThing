@@ -54,6 +54,7 @@ const BehaviourTab: React.FC<Props> = ({ config, update }) => {
               onChange={e => setAuto({ playScreen: e.target.value })}
             >
               <option value="auto">The screen with Now playing</option>
+              <option value="fullscreen">Fullscreen player</option>
               {screens.map(s => (
                 <option key={s.id} value={s.id}>
                   {s.name}

@@ -52,6 +52,7 @@ function remapButtons(
 
 const ScreensTab: React.FC<Props> = ({ config, update }) => {
   const [selected, setSelected] = useState(0)
+  const [renaming, setRenaming] = useState<string | null>(null)
   const [targetCol, setTargetCol] = useState(0)
   const [dropAt, setDropAt] = useState<{ col: number; index: number } | null>(
     null
@@ -183,7 +184,40 @@ const ScreensTab: React.FC<Props> = ({ config, update }) => {
             }}
           >
             <span className={styles.screenNum}>{i + 1}</span>
-            <span className={styles.screenName}>{s.name}</span>
+            {renaming === s.id ? (
+              <input
+                type="text"
+                className={styles.inlineRename}
+                autoFocus
+                defaultValue={s.name}
+                maxLength={24}
+                onClick={e => e.stopPropagation()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                  if (e.key === 'Escape') setRenaming(null)
+                }}
+                onBlur={e => {
+                  const name = e.target.value.trim()
+                  if (name)
+                    update(c => ({
+                      ...c,
+                      screens: c.screens.map(x => (x.id === s.id ? { ...x, name } : x))
+                    }))
+                  setRenaming(null)
+                }}
+              />
+            ) : (
+              <span
+                className={styles.screenName}
+                title="Double-click to rename"
+                onDoubleClick={e => {
+                  e.stopPropagation()
+                  setRenaming(s.id)
+                }}
+              >
+                {s.name}
+              </span>
+            )}
             <div className={styles.rowActions}>
               <button
                 className={styles.iconBtn}
@@ -214,19 +248,25 @@ const ScreensTab: React.FC<Props> = ({ config, update }) => {
           <span className="material-icons">add</span>Add screen
         </button>
         <p className={styles.help}>
-          Swipe on the CarThing or map a button to switch screens.
+          Double-click a screen to rename it. Swipe on the CarThing or map a
+          button to switch screens.
         </p>
       </aside>
 
       <section className={styles.editor}>
         <div className={styles.editorHead}>
-          <input
-            type="text"
-            className={styles.nameInput}
-            value={current.name}
-            maxLength={24}
-            onChange={e => setScreen(s => ({ ...s, name: e.target.value }))}
-          />
+          <label className={styles.renameField} title="Rename this screen">
+            <span className="material-icons">edit</span>
+            <input
+              type="text"
+              className={styles.nameInput}
+              value={current.name}
+              maxLength={24}
+              placeholder="Screen name"
+              onChange={e => setScreen(s => ({ ...s, name: e.target.value }))}
+              onBlur={e => !e.target.value.trim() && setScreen(s => ({ ...s, name: `Screen ${sIndex + 1}` }))}
+            />
+          </label>
           <button
             className={styles.dangerGhost}
             disabled={screens.length <= 1}

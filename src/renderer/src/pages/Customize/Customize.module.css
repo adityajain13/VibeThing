@@ -1381,3 +1381,39 @@
   padding-right: 190px;
   min-height: 52px;
 }
+
+/* screen renaming */
+.renameField {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 10px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: text;
+}
+
+.renameField:focus-within {
+  border-color: var(--accent);
+}
+
+.renameField > :global(.material-icons) {
+  font-size: 17px;
+  color: var(--muted);
+}
+
+.customize .renameField .nameInput {
+  border: none !important;
+  padding-left: 2px !important;
+}
+
+.customize .inlineRename {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 6px !important;
+  font-size: 14px !important;
+  border-color: var(--accent) !important;
+}

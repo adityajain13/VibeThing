@@ -27,12 +27,20 @@ const Timer: React.FC = () => {
     return () => clearInterval(t)
   }, [running, state.mode])
 
+  // hide the step hint shortly after the dial stops
+  useEffect(() => {
+    if (!timer.lastDialStep()) return
+    const t = setTimeout(() => tick(n => n + 1), 1300)
+    return () => clearTimeout(t)
+  }, [state])
+
   // dial turns while focused
   useEffect(() => {
     const listener = (e: WheelEvent) => {
       if (!ref.current?.matches(':focus-within') || e.deltaX === 0) return
       e.preventDefault()
-      timer.adjust((e.deltaX > 0 ? 1 : -1) * MIN)
+      e.stopImmediatePropagation()
+      timer.dialTick(e.deltaX > 0 ? 1 : -1)
     }
     document.addEventListener('wheel', listener, { passive: false })
     return () => document.removeEventListener('wheel', listener)
@@ -42,8 +50,8 @@ const Timer: React.FC = () => {
     if (e.key === 'Enter') {
       e.stopPropagation()
       timer.toggle()
-    } else if (e.key === 'ArrowLeft') timer.adjust(-MIN)
-    else if (e.key === 'ArrowRight') timer.adjust(MIN)
+    } else if (e.key === 'ArrowLeft') timer.dialTick(-1)
+    else if (e.key === 'ArrowRight') timer.dialTick(1)
   }
 
   const value = timer.value()
@@ -68,6 +76,11 @@ const Timer: React.FC = () => {
         onClick={() => (state.done ? timer.dismiss() : timer.toggle())}
       >
         <p className={`${styles.digits} tnum`}>{state.mode === 'timer' && state.done ? "Time's up" : shown}</p>
+        {state.mode === 'timer' && !running && !state.done && timer.lastDialStep() > 0 && (
+          <p className={styles.step}>
+            ±{timer.lastDialStep() >= MIN ? '1 min' : `${timer.lastDialStep() / 1000}s`}
+          </p>
+        )}
         {state.mode === 'timer' && !state.done && (
           <div className={styles.bar}>
             <div className={styles.fill} style={{ width: `${Math.max(0, Math.min(1, progress)) * 100}%` }} />
