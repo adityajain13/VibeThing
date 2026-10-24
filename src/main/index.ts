@@ -190,8 +190,11 @@ app.on('ready', async () => {
     else log(`Using downloaded ADB from path: ${adbPath}`, 'adb')
   }
 
+  // never let a server problem stop the window and CarThing checks
   if (getStorageValue('setupComplete') === true)
-    await serverManager.start()
+    await serverManager.start().catch(err =>
+      log(`Server failed to start: ${err}`, 'VibeThing', LogLevel.ERROR)
+    )
 
   await setupIpcHandlers()
   await setupTray()
@@ -368,6 +371,17 @@ async function setupIpcHandlers() {
 
     if (found) {
       const installed = await checkInstalledApp(found)
+
+      // installed, but by another version of the app (or before the
+      // connection password changed): reinstall so they match
+      if (installed && getStorageValue('installedClientVersion') !== app.getVersion()) {
+        log(
+          `CarThing has an older client (${getStorageValue('installedClientVersion') ?? 'unknown'}); updating`,
+          'CarThingState'
+        )
+        mainWindow?.webContents.send('carThingState', 'installing')
+        await installApp(found)
+      }
 
       if (installed) {
         mainWindow?.webContents.send('carThingState', 'ready')

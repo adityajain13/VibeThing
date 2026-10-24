@@ -22,7 +22,14 @@ export function migrateFromGlanceThing() {
     if (!source) return
 
     fs.mkdirSync(target, { recursive: true })
-    fs.copyFileSync(path.join(source, 'storage.json'), path.join(target, 'storage.json'))
+    // Encrypted values (connection password, Spotify login) use a key tied to
+    // the app's own folder, so VibeThing can't read GlanceThing's. Leave them
+    // out; fresh ones are made and pushed to the CarThing on install.
+    const data = JSON.parse(fs.readFileSync(path.join(source, 'storage.json'), 'utf8'))
+    for (const key of Object.keys(data))
+      if (key === 'socketPassword' || key.startsWith('playbackConfig.')) delete data[key]
+    delete data.installedClientVersion
+    fs.writeFileSync(path.join(target, 'storage.json'), JSON.stringify(data, null, 2), 'utf8')
     // shortcut icons and screensaver image (adb is downloaded fresh: a copy of
     // another app's adb can be incomplete or locked by its running server)
     for (const dir of ['shortcuts', 'screensaver']) {

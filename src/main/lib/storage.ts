@@ -115,7 +115,20 @@ export function getStorageValue(key: string, secure = false) {
       )
       return value
     }
-    return safeStorage.decryptString(Buffer.from(value, 'hex')).toString()
+    try {
+      return safeStorage.decryptString(Buffer.from(value, 'hex')).toString()
+    } catch (err) {
+      // e.g. encrypted by another app (GlanceThing) with a different key;
+      // forget it so a fresh value is made instead of crashing startup
+      log(
+        `Couldn't decrypt ${key} (${err}); resetting it`,
+        'Storage',
+        LogLevel.WARN
+      )
+      delete storage[key]
+      writeStorage(storage)
+      return null
+    }
   } else {
     return value
   }

@@ -13,7 +13,7 @@ import {
   LogLevel
 } from './utils.js'
 import { serverManager } from './server.js'
-import { getSocketPassword } from './storage.js'
+import { getSocketPassword, setStorageValue } from './storage.js'
 import { getWebAppDir } from './webapp.js'
 
 let verifiedAdb: string | null = null
@@ -305,7 +305,7 @@ export async function installApp(device: string | null) {
   const adb = await getAdbExecutable()
 
   log('Installing app...', 'adb')
-  await execAsync(`${adb} -s ${device} push ${appDir} /tmp/webapp`)
+  await execAsync(`${adb} -s ${device} push "${appDir}" /tmp/webapp`)
   await execAsync(
     `${adb} -s ${device} shell "echo ${WS_PASSWORD} > /tmp/webapp/ws-password"`
   )
@@ -316,6 +316,7 @@ export async function installApp(device: string | null) {
     `${adb} -s ${device} shell "mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp"`
   )
   await restartChromium(device)
+  setStorageValue('installedClientVersion', app.getVersion())
   log('Installed app!', 'adb')
 }
 
