@@ -65,9 +65,13 @@ function cleanConfig(config: ClientConfig): ClientConfig {
   return { ...config, screens }
 }
 
-const Customize: React.FC = () => {
+/**
+ * As a modal (opened from the titlebar) or, with `embedded`, as the app's
+ * main page whenever the CarThing is ready.
+ */
+const Customize: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
   const { openModals, setModalOpen } = useContext(ModalContext)
-  const open = openModals.includes('customize')
+  const open = embedded || openModals.includes('customize')
 
   const [tab, setTab] = useState<Tab>('screens')
   const [config, setConfig] = useState<ClientConfig | null>(null)
@@ -77,6 +81,13 @@ const Customize: React.FC = () => {
 
   const configDirty = useRef(false)
   const macrosDirty = useRef(false)
+
+  // embedded: pick up shortcut changes made in the Shortcuts modal
+  const otherModalOpen = embedded && openModals.length > 0
+  useEffect(() => {
+    if (!embedded || otherModalOpen) return
+    window.api.getShortcuts().then(a => setApps((a as Shortcut[]) ?? []))
+  }, [embedded, otherModalOpen])
 
   useEffect(() => {
     if (!open) return
@@ -108,13 +119,14 @@ const Customize: React.FC = () => {
   }
 
   function onClickBackground(e: React.MouseEvent<HTMLDivElement>) {
-    if (e.target === e.currentTarget) setModalOpen('customize', false)
+    if (!embedded && e.target === e.currentTarget) setModalOpen('customize', false)
   }
 
   return (
     <div
       className={styles.customize}
       data-open={open}
+      data-embedded={embedded}
       onClick={onClickBackground}
     >
       <div className={styles.box}>
@@ -141,12 +153,14 @@ const Customize: React.FC = () => {
               </>
             )}
           </div>
-          <button
-            className={styles.close}
-            onClick={() => setModalOpen('customize', false)}
-          >
-            <span className="material-icons">close</span>
-          </button>
+          {!embedded && (
+            <button
+              className={styles.close}
+              onClick={() => setModalOpen('customize', false)}
+            >
+              <span className="material-icons">close</span>
+            </button>
+          )}
         </header>
 
         <nav className={styles.tabs}>

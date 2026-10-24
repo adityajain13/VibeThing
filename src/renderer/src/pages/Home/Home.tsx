@@ -7,6 +7,8 @@ import { ModalContext } from '@/contexts/ModalContext.js'
 import icon from '@/assets/icon.png'
 import iconNightly from '@/assets/icon-nightly.png'
 
+import Customize from '@/pages/Customize/Customize.js'
+
 import styles from './Home.module.css'
 import { ChannelContext } from '@/contexts/ChannelContext.js'
 
@@ -24,8 +26,18 @@ const Home: React.FC = () => {
   const { channel } = useContext(ChannelContext)
   const [hasCustomClient, setHasCustomClient] = useState(false)
 
+  // start on the settings page if the CarThing was ready last time, so
+  // launching doesn't flash the status page
   const [carThingState, setCarThingState] = useState<CarThingState | null>(
-    null
+    () => {
+      try {
+        return localStorage.getItem('lastCarThingState') === CarThingState.Ready
+          ? CarThingState.Ready
+          : null
+      } catch {
+        return null
+      }
+    }
   )
   const carThingStateRef = useRef(carThingState)
   const [needsPlaybackSetup, setNeedsPlaybackSetup] = useState(false)
@@ -40,6 +52,11 @@ const Home: React.FC = () => {
 
       setCarThingState(state)
       carThingStateRef.current = state
+      try {
+        localStorage.setItem('lastCarThingState', state)
+      } catch {
+        /* ignore */
+      }
     })
 
     const stateTimeout = setTimeout(() => {
@@ -64,6 +81,10 @@ const Home: React.FC = () => {
   useEffect(() => {
     updateHasCustomClient()
   }, [devMode])
+
+  // ready means there's nothing to report: go straight to the settings
+  if (carThingState === CarThingState.Ready && !needsPlaybackSetup)
+    return <Customize embedded />
 
   return (
     <div className={styles.home}>
@@ -101,6 +122,11 @@ const Home: React.FC = () => {
           </>
         ) : (
           <p>Checking for CarThing...</p>
+        )}
+        {carThingState !== CarThingState.Ready && (
+          <button className={styles.secondary} onClick={() => setModalOpen('customize', true)}>
+            Customize anyway
+          </button>
         )}
       </div>
       {needsPlaybackSetup && carThingState === CarThingState.Ready ? (

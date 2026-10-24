@@ -121,3 +121,10 @@
     transform: translateY(0);
   }
 }
+
+.status button.secondary {
+  background: transparent;
+  color: #9aa;
+  font-size: 14px;
+  padding: 6px 12px;
+}

@@ -1355,3 +1355,29 @@
   border-radius: 6px;
   min-width: 0;
 }
+
+/* the app's main page when the CarThing is ready */
+.customize[data-embedded='true'] {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  z-index: auto;
+  backdrop-filter: none;
+  transition: none;
+}
+
+.customize[data-embedded='true'] .box {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  transform: none;
+  background: #000;
+}
+
+/* leave room for the window's titlebar buttons (top right) */
+.customize[data-embedded='true'] .header {
+  padding-right: 190px;
+  min-height: 52px;
+}
