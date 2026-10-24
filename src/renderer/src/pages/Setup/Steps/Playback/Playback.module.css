@@ -39,7 +39,7 @@
   all: unset;
   padding: 8px 16px;
   border-radius: 5px;
-  background-color: #0064ff;
+  background-color: var(--brand);
   cursor: pointer;
   transition: opacity 200ms ease;
   animation: appear 500ms ease;
@@ -60,7 +60,7 @@
 
 .state span {
   font-size: 4rem;
-  color: #1ed760;
+  color: var(--brand-tint);
 }
 
 .state span[data-type='error'] {
@@ -89,7 +89,7 @@
 }
 
 .provider[data-selected='true'] {
-  border-color: #0064ff;
+  border-color: var(--brand);
 }
 
 .setup {

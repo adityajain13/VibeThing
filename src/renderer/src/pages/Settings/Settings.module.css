@@ -250,7 +250,7 @@
 }
 
 .success {
-  color: #1ed760;
+  color: var(--brand-tint);
   animation: appear 500ms ease;
 }
 
@@ -281,37 +281,10 @@
   border: 1px solid #555;
 }
 
-.sliderSetting {
-  display: flex;
-  flex-direction: column;
-  transition: 200ms ease;
-}
 
-.sliderSetting[data-disabled='true'] {
-  opacity: 0.5;
-  pointer-events: none;
-}
 
-.sliderSetting .description {
-  font-size: 14px;
-  color: #aaa;
-}
 
-.sliderSetting input {
-  flex: 1;
-  padding: 5px;
-  font-size: 16px;
-  border-radius: 5px;
-  background: #222;
-  color: #fff;
-  border: 1px solid #333;
-  transition: 200ms ease;
-}
 
-.sliderSetting input:focus {
-  outline: none;
-  border: 1px solid #555;
-}
 
 .patches {
   display: flex;
@@ -343,7 +316,7 @@
 }
 
 .patch > span {
-  color: #1ed760;
+  color: var(--brand-tint);
 }
 
 .patch button {
@@ -404,9 +377,9 @@
   margin-top: 10px;
   padding: 8px 12px;
   background-color: rgba(30, 215, 96, 0.1);
-  border-left: 3px solid #1ed760;
+  border-left: 3px solid var(--brand-tint);
   border-radius: 4px;
-  color: #1ed760;
+  color: var(--brand-tint);
   font-size: 14px;
   animation: appear 500ms ease;
 }
@@ -422,10 +395,10 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: rgb(0, 100, 255, 0.1);
-  border-left: 3px solid #0096ff;
+  background-color: rgb(73, 113, 94, 0.1);
+  border-left: 3px solid var(--brand-hi);
   border-radius: 4px;
-  color: #0096ff;
+  color: var(--brand-hi);
   font-size: 14px;
   animation: appear 500ms ease;
   margin-bottom: 10px;
@@ -440,9 +413,15 @@
 }
 
 .customPort .notice[data-type='success'] {
-  color: #1ed760;
+  color: var(--brand-tint);
 }
 
 .customPort .notice[data-type='error'] {
   color: #f00;
+}
+
+.credit .info .creditName {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
 }

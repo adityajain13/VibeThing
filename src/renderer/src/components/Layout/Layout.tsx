@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom'
 import Developer from '@/pages/Developer/Developer.js'
 import Shortcuts from '@/pages/Shortcuts/Shortcuts.js'
 import Settings from '@/pages/Settings/Settings.js'
+import Customize from '@/pages/Customize/Customize.js'
 
 import Titlebar from '@/components/Titlebar/Titlebar.js'
 
@@ -19,6 +20,7 @@ const Layout: React.FC = () => {
         </div>
       </div>
       <Settings />
+      <Customize />
       <Shortcuts />
       <Developer />
     </>

@@ -1,0 +1,130 @@
+.timer {
+  flex-direction: column;
+  padding: 14px 18px 14px;
+}
+
+.modes {
+  display: flex;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--panel-hi);
+}
+
+.modes button {
+  all: unset;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: calc(13px * var(--t-timer-s, 1) * var(--t-timer-label-s, 1));
+  font-weight: var(--t-timer-label-w, 700);
+  color: var(--muted);
+}
+
+.modes button[data-active='true'] {
+  background: var(--text);
+  color: var(--ink);
+}
+
+.face {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.digits {
+  font-size: calc(64px * var(--t-timer-s, 1) * var(--t-timer-digits-s, 1));
+  font-weight: var(--t-timer-digits-w, 800);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.face[data-done='true'] .digits {
+  color: var(--accent);
+  animation: pulse 900ms ease-in-out infinite;
+  font-size: calc(46px * var(--t-timer-s, 1) * var(--t-timer-digits-s, 1));
+}
+
+.bar {
+  margin-top: 12px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--panel-hi);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 250ms linear;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.chip {
+  all: unset;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--panel-hi);
+  font-size: calc(14px * var(--t-timer-s, 1) * var(--t-timer-label-s, 1));
+  font-weight: var(--t-timer-label-w, 700);
+}
+
+.hint {
+  font-size: calc(14px * var(--t-timer-s, 1) * var(--t-timer-label-s, 1));
+  font-weight: var(--t-timer-label-w, 700);
+  color: var(--faint);
+}
+
+.round {
+  all: unset;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--panel-hi);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.round span {
+  font-size: 24px;
+}
+
+.primary {
+  background: var(--text);
+  color: var(--ink);
+}
+
+/* short slots: drop the mode switch, shrink the digits */
+[data-h='short'] .modes {
+  display: none;
+}
+
+[data-h='short'] .digits {
+  font-size: calc(40px * var(--t-timer-s, 1) * var(--t-timer-digits-s, 1));
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.step {
+  margin-top: 6px;
+  font-size: calc(14px * var(--t-timer-s, 1) * var(--t-timer-label-s, 1));
+  font-weight: var(--t-timer-label-w, 700);
+  color: var(--accent);
+}

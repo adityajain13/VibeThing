@@ -60,6 +60,25 @@ export const actions: HandlerAction[] = [
     }
   },
   {
+    action: 'seek',
+    handle: async (_, data) => {
+      await playbackManager.seek((data as { position: number }).position)
+    }
+  },
+  {
+    action: 'queue',
+    handle: async ws => {
+      const queue = await playbackManager.getQueue().catch(() => [])
+      ws.send(JSON.stringify({ type: 'playback', action: 'queue', data: queue }))
+    }
+  },
+  {
+    action: 'like',
+    handle: async (_, data) => {
+      await playbackManager.setLiked((data as { state: boolean }).state)
+    }
+  },
+  {
     action: 'repeat',
     handle: async (_, data) => {
       await playbackManager.repeat((data as { state: RepeatMode }).state)

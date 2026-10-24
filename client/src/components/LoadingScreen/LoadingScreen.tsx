@@ -29,9 +29,9 @@ const LoadingScreen: React.FC = () => {
       {firstLoad ? (
         <>
           <img src="./icon.png" alt="" />
-          <h1>Welcome to GlanceThing!</h1>
+          <h1>Welcome to VibeThing!</h1>
           <p>
-            Open GlanceThing on your computer and follow the instructions.
+            Open VibeThing on your computer and follow the instructions.
           </p>
         </>
       ) : (

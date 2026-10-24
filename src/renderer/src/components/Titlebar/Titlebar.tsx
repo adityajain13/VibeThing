@@ -20,11 +20,6 @@ const Titlebar: React.FC = () => {
         ]
       : []),
     {
-      icon: 'apps',
-      action: () =>
-        setModalOpen('shortcuts', !openModals.includes('shortcuts'))
-    },
-    {
       icon: 'settings',
       action: () =>
         setModalOpen('settings', !openModals.includes('settings'))
@@ -37,7 +32,7 @@ const Titlebar: React.FC = () => {
 
   return (
     <div className={styles.titlebar}>
-      <div className={styles.actions}>
+      <div className={styles.actions} data-titlebar-actions>
         {buttons.map(({ icon, action }) => (
           <button key={icon} onClick={action}>
             <span className="material-icons">{icon}</span>

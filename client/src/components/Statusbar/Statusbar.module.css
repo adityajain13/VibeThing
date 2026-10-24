@@ -1,16 +1,47 @@
 .statusbar {
   display: flex;
-  background: #111;
-  padding: 8px 12px;
+  align-items: center;
+  height: 44px;
+  padding: 0 18px;
+  flex-shrink: 0;
 }
 
-.timedate {
+.time {
+  font-weight: var(--t-statusbar-time-w, 700);
+  font-size: calc(22px * var(--t-statusbar-s, 1) * var(--t-statusbar-time-s, 1));
+  letter-spacing: -0.01em;
+}
+
+.date {
+  font-size: calc(17px * var(--t-statusbar-s, 1) * var(--t-statusbar-date-s, 1));
+  color: var(--muted);
+  margin-left: 12px;
+  font-weight: var(--t-statusbar-date-w, 500);
+}
+
+.pages {
+  margin-left: auto;
   display: flex;
   align-items: center;
 }
 
-.time {
-  font-weight: 700;
-  font-size: 1.2em;
-  margin-right: 15px;
+.page {
+  all: unset;
+  font-size: calc(15px * var(--t-statusbar-s, 1) * var(--t-statusbar-page-s, 1));
+  font-weight: var(--t-statusbar-page-w, 600);
+  color: var(--faint);
+  padding: 6px 12px;
+  border-radius: 999px;
+  margin-left: 2px;
+  transition: color 200ms ease, background-color 200ms ease;
+}
+
+.page[data-active='true'] {
+  color: var(--text);
+  background: var(--panel-hi);
+}
+
+.offline {
+  margin-left: 12px;
+  color: var(--danger);
 }

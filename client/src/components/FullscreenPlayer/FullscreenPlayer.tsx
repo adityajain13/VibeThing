@@ -1,239 +1,223 @@
-import React, {
-  KeyboardEvent,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  WheelEvent
-} from 'react'
+import { useOption } from '@/lib/useOption.ts'
+import { useContext, useEffect, useRef, useState } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
+import { FullscreenView, UIContext } from '@/contexts/UIContext.tsx'
 
-import styles from './FullescreenPlayer.module.css'
+import Progress from '@/components/Progress/Progress.tsx'
+import LyricsView from '@/components/LyricsView/LyricsView.tsx'
+import VolumeOverlay from '@/components/VolumeOverlay/VolumeOverlay.tsx'
 
-interface FullescreenPlayerProps {
-  shown: boolean
-  setShown: React.Dispatch<React.SetStateAction<boolean>>
-}
+import styles from './FullscreenPlayer.module.css'
 
-const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
-  shown,
-  setShown
-}) => {
-  const { image, playerData, playerDataRef, actions } =
-    useContext(MediaContext)
+const VIEWS: { id: FullscreenView; label: string }[] = [
+  { id: 'cover', label: 'Now playing' },
+  { id: 'lyrics', label: 'Lyrics' },
+  { id: 'queue', label: 'Up next' }
+]
 
-  const playerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (shown) playerRef.current?.focus()
-    else playerRef.current?.blur()
-  }, [shown])
-
-  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    e.stopPropagation()
-    e.preventDefault()
-
-    if (e.key === 'Enter') {
-      actions.playPause()
-    } else if (e.key === 'ArrowLeft') {
-      onWheel({ deltaX: -1 } as WheelEvent<HTMLDivElement>)
-    } else if (e.key === 'ArrowRight') {
-      onWheel({ deltaX: 1 } as WheelEvent<HTMLDivElement>)
-    } else if (e.key === 'Escape') {
-      setShown(false)
-    }
-  }
-
-  function onWheel(e: WheelEvent<HTMLDivElement>) {
-    if (e.deltaX < 0) {
-      volumeDown()
-    } else if (e.deltaX > 0) {
-      volumeUp()
-    }
-  }
-
-  const [volume, setVolume] = useState(0)
-  const volumeRef = useRef(volume)
-  const lastVolumeChange = useRef(0)
-  const [volumeAdjusted, setVolumeAdjusted] = useState(false)
-
-  function volumeUp() {
-    if (playerDataRef.current === null) return
-    if (!playerDataRef.current.supportedActions.includes('volume')) return
-
-    const volume = volumeRef.current
-
-    if (volume < 100) {
-      const newVolume = Math.min(volume + 10, 100)
-
-      actions.setVolume(newVolume)
-      setVolume(newVolume)
-      volumeRef.current = newVolume
-      lastVolumeChange.current = Date.now()
-    }
-  }
-
-  function volumeDown() {
-    if (playerDataRef.current === null) return
-    if (!playerDataRef.current.supportedActions.includes('volume')) return
-
-    const volume = volumeRef.current
-
-    if (volume > 0) {
-      const newVolume = Math.max(volume - 10, 0)
-      actions.setVolume(newVolume)
-
-      setVolume(newVolume)
-      volumeRef.current = newVolume
-      lastVolumeChange.current = Date.now()
-    }
-  }
+const Queue: React.FC = () => {
+  const { queue, playerData, actions } = useContext(MediaContext)
+  const listRef = useRef<HTMLDivElement>(null)
+  const trackId = playerData?.track.id ?? playerData?.track.name
 
   useEffect(() => {
-    setVolumeAdjusted(true)
-    const timer = setTimeout(() => {
-      setVolumeAdjusted(false)
-    }, 2000)
+    actions.requestQueue()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackId])
 
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [volume])
-
-  useEffect(() => {
-    if (playerData) {
-      if (lastVolumeChange.current < Date.now() - 1000) {
-        setVolume(playerData.volume)
-        volumeRef.current = playerData.volume
-      }
-    }
-  }, [playerData])
+  if (!playerData?.supportedActions.includes('queue'))
+    return <p className={styles.empty}>Your player doesn't share its queue</p>
+  if (!queue) return <p className={styles.empty}>Loading the queue…</p>
+  if (queue.length === 0) return <p className={styles.empty}>Nothing queued up</p>
 
   return (
-    <div
-      className={styles.player}
-      data-shown={shown}
-      ref={playerRef}
-      onKeyDown={onKeyDown}
-      onWheel={onWheel}
-      tabIndex={-1}
-    >
-      <button
-        onClick={e => {
-          setShown(false)
-          e.currentTarget.blur()
-        }}
-        className={styles.close}
-      >
-        <span className="material-icons">keyboard_arrow_down</span>
-      </button>
-      {playerData ? (
-        <>
-          <img
-            src={image ?? undefined}
-            alt=""
-            className={styles.background}
-          />
-          <div className={styles.track}>
-            <div className={styles.cover}>
-              {image ? (
-                <img src={image} alt="" />
-              ) : (
-                <span className="material-icons">music_note</span>
-              )}
-            </div>
-            <div className={styles.info}>
-              <div className={styles.title}>{playerData.track.name}</div>
-              <div className={styles.artist}>
-                {playerData.track.artists.join(', ')}
-              </div>
-            </div>
+    <div className={styles.queue} ref={listRef}>
+      {queue.map((item, i) => (
+        <div key={i} className={styles.queueItem}>
+          {item.image ? (
+            <img src={item.image} alt="" />
+          ) : (
+            <span className={`material-icons ${styles.queueArt}`}>music_note</span>
+          )}
+          <div className={styles.queueText}>
+            <p className={styles.queueName}>{item.name}</p>
+            <p className={styles.queueArtists}>{item.artists.join(', ')}</p>
           </div>
-          <div className={styles.progress}>
-            <div
-              className={styles.bar}
-              style={{
-                width: `${(playerData.track.duration.current / playerData.track.duration.total) * 100}%`
-              }}
-            ></div>
-          </div>
-          <div
-            className={styles.controls}
-            data-hide-buttons={volumeAdjusted}
-          >
-            {playerData.supportedActions.includes('volume') && (
-              <div className={styles.volume} data-shown={volumeAdjusted}>
-                <button onMouseDown={volumeDown}>
-                  <span className="material-icons"> volume_down </span>
-                </button>
-                <div className={styles.slider}>
-                  <div
-                    className={styles.fill}
-                    style={{ width: `${volume}%` }}
-                  ></div>
-                </div>
-                <button onMouseDown={volumeUp}>
-                  <span className="material-icons"> volume_up </span>
-                </button>
-              </div>
-            )}
-            {playerData.supportedActions.includes('shuffle') ? (
-              <button
-                data-shuffle-state={playerData?.shuffle}
-                onClick={() =>
-                  actions.shuffle(playerData?.shuffle ? false : true)
-                }
-              >
-                <span className="material-icons">shuffle</span>
-              </button>
-            ) : null}
-            <button onClick={() => actions.skipBackward()}>
-              <span className="material-icons">skip_previous</span>
-            </button>
-            <button onClick={() => actions.playPause()}>
-              <span className="material-icons">
-                {playerData?.isPlaying ? 'pause' : 'play_arrow'}
-              </span>
-            </button>
-            <button onClick={() => actions.skipForward()}>
-              <span className="material-icons">skip_next</span>
-            </button>
-            {playerData.supportedActions.includes('repeat') ? (
-              <button
-                data-repeat-state={playerData?.repeat !== 'off'}
-                onClick={() =>
-                  actions.repeat(
-                    playerData?.repeat === 'off'
-                      ? 'on'
-                      : playerData?.repeat === 'on'
-                        ? 'one'
-                        : 'off'
-                  )
-                }
-              >
-                <span className="material-icons">
-                  {playerData?.repeat === 'off'
-                    ? 'repeat'
-                    : playerData?.repeat === 'on'
-                      ? 'repeat'
-                      : 'repeat_one'}
-                </span>
-              </button>
-            ) : null}
-          </div>
-        </>
-      ) : (
-        <div className={styles.notPlaying}>
-          <span className="material-icons">music_note</span>
-          <p className={styles.title}>Nothing playing!</p>
-          <p className={styles.note}>
-            Start playing something on your computer.
-          </p>
         </div>
-      )}
+      ))}
     </div>
   )
 }
 
-export default FullescreenPlayer
+const FullscreenPlayer: React.FC = () => {
+  const { fullscreen, setFullscreen } = useContext(UIContext)
+  const showAlbum = useOption('fullscreen', 'showAlbum')
+  const { image, playerData, actions, supports } = useContext(MediaContext)
+
+  // keep the art's own shape (video thumbnails are 16:9) inside a 420x300 box
+  const [coverSize, setCoverSize] = useState({ width: 300, height: 300 })
+  useEffect(() => {
+    if (!image) return setCoverSize({ width: 300, height: 300 })
+    const img = new Image()
+    img.onload = () => {
+      const ar = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1
+      const width = Math.round(Math.min(420, 300 * ar))
+      setCoverSize({ width, height: Math.round(width / ar) })
+    }
+    img.src = image
+  }, [image])
+  const shown = fullscreen !== null
+  const view = fullscreen ?? 'cover'
+
+  const latest = useRef({ shown, actions, view })
+  latest.current = { shown, actions, view }
+
+  // knob: volume, knob press: play/pause (the queue scrolls via touch)
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      const { shown, actions } = latest.current
+      if (!shown || e.deltaX === 0) return
+      e.preventDefault()
+      actions.changeVolume(e.deltaX > 0 ? 1 : -1)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      const { shown, actions } = latest.current
+      if (!shown) return
+      if (e.key === 'Enter') actions.playPause()
+      else if (e.key === 'ArrowLeft') actions.changeVolume(-1)
+      else if (e.key === 'ArrowRight') actions.changeVolume(1)
+    }
+    document.addEventListener('wheel', onWheel, { passive: false })
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('wheel', onWheel)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (shown) (document.activeElement as HTMLElement | null)?.blur()
+  }, [shown])
+
+  const repeatIcon = playerData?.repeat === 'one' ? 'repeat_one' : 'repeat'
+
+  return (
+    <div className={styles.player} data-shown={shown} data-view={view}>
+      {image && <img src={image} alt="" className={styles.background} />}
+
+      <div className={styles.top}>
+        <button className={styles.close} onClick={() => setFullscreen(null)} aria-label="Close">
+          <span className="material-icons">keyboard_arrow_down</span>
+        </button>
+        <div className={styles.tabs}>
+          {VIEWS.map(v => (
+            <button
+              key={v.id}
+              className={styles.tab}
+              data-active={v.id === view}
+              onClick={() => setFullscreen(v.id)}
+            >
+              {v.label}
+            </button>
+          ))}
+        </div>
+        {supports('like') && playerData ? (
+          <button
+            className={styles.like}
+            data-liked={playerData.track.liked === true}
+            onClick={actions.toggleLike}
+            aria-label={playerData.track.liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
+          >
+            <span className="material-icons">
+              {playerData.track.liked ? 'favorite' : 'favorite_border'}
+            </span>
+          </button>
+        ) : (
+          <span className={styles.spacer} />
+        )}
+      </div>
+
+      {!playerData ? (
+        <p className={styles.empty}>Nothing playing</p>
+      ) : (
+        <div className={styles.body}>
+          {view === 'cover' && (
+            <div className={styles.now}>
+              <div className={styles.cover} style={coverSize}>
+                {image ? <img src={image} alt="" /> : <span className="material-icons">music_note</span>}
+              </div>
+              <div className={styles.info}>
+                <p className={styles.title}>{playerData.track.name}</p>
+                <p className={styles.artist}>{playerData.track.artists.join(', ')}</p>
+                {showAlbum && <p className={styles.album}>{playerData.track.album}</p>}
+                <Progress className={styles.progress} />
+                <div className={styles.controls}>
+                  {/* only offer what the current player can actually do */}
+                  {supports('shuffle') && (
+                    <button
+                      data-toggle={playerData.shuffle}
+                      onClick={() => actions.shuffle(!playerData.shuffle)}
+                      aria-label="Shuffle"
+                    >
+                      <span className="material-icons">shuffle</span>
+                    </button>
+                  )}
+                  {supports('previous') && (
+                    <button onClick={actions.skipBackward} aria-label="Previous">
+                      <span className="material-icons">skip_previous</span>
+                    </button>
+                  )}
+                  <button className={styles.play} onClick={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
+                    <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
+                  </button>
+                  {supports('next') && (
+                    <button onClick={actions.skipForward} aria-label="Next">
+                      <span className="material-icons">skip_next</span>
+                    </button>
+                  )}
+                  {supports('repeat') && (
+                    <button
+                      data-toggle={playerData.repeat !== 'off'}
+                      onClick={() =>
+                        actions.repeat(playerData.repeat === 'off' ? 'on' : playerData.repeat === 'on' ? 'one' : 'off')
+                      }
+                      aria-label="Repeat"
+                    >
+                      <span className="material-icons">{repeatIcon}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {view === 'lyrics' && (
+            <div className={styles.lyrics}>
+              <LyricsView size="large" />
+            </div>
+          )}
+
+          {view === 'queue' && <Queue />}
+
+          {view !== 'cover' && (
+            <div className={styles.mini}>
+              {image && <img src={image} alt="" />}
+              <div className={styles.miniText}>
+                <p className={styles.miniTitle}>{playerData.track.name}</p>
+                <p className={styles.miniArtist}>{playerData.track.artists.join(', ')}</p>
+              </div>
+              <Progress showTimes={false} className={styles.miniProgress} />
+              <button className={styles.miniPlay} onClick={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
+                <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      <VolumeOverlay />
+    </div>
+  )
+}
+
+export default FullscreenPlayer

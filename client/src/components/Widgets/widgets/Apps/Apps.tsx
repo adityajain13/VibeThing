@@ -3,13 +3,26 @@ import type { KeyboardEvent, WheelEvent } from 'react'
 
 import { SocketContext } from '@/contexts/SocketContext.tsx'
 
+import { useChoice, useOption, useSlider } from '@/lib/useOption.ts'
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
 
 import styles from './Apps.module.css'
 
 interface App {
   id: string
-  path: string
+  /** what the desktop app sends */
+  command?: string
+  path?: string
+}
+
+/** Shortcuts only store a command; show the program's name */
+function appLabel(command: string) {
+  const first = command.split('\n')[0].trim()
+  const m = first.match(/^"([^"]+)"|^'([^']+)'|^(\S+)/)
+  const exe = m ? (m[1] ?? m[2] ?? m[3]) : first
+  const file = exe.split(/[\\/]/).pop() ?? exe
+  const name = file.replace(/\.(exe|lnk|app|bat|cmd)$/i, '') || 'App'
+  return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
 const Apps: React.FC = () => {
@@ -115,12 +128,25 @@ const Apps: React.FC = () => {
     }
   }, [])
 
+  const iconSize = useSlider('apps', 'iconSize')
+  const spacing = useSlider('apps', 'spacing')
+  const shape = useChoice('apps', 'shape')
+  const showNames = useOption('apps', 'showNames')
+  const vars = {
+    '--app-icon': `${Math.round(56 * (iconSize / 100))}px`,
+    '--app-gap': `${Math.round(5 * (spacing / 100))}px`,
+    '--app-pad': `${Math.round(10 * (spacing / 100))}px`
+  } as React.CSSProperties
+
   return (
     <BaseWidget
       className={styles.apps}
       onKeyDown={onKeyDown}
       onFocus={onFocus}
       ref={appsRef}
+      style={vars}
+      data-shape={shape}
+      data-names={showNames}
     >
       {apps ? (
         apps.length > 0 ? (
@@ -138,6 +164,7 @@ const Apps: React.FC = () => {
               onClick={() => openApp(app.id)}
             >
               <img src={images[app.id]} />
+              {showNames && <p className={styles.name}>{appLabel(app.command ?? app.path ?? '')}</p>}
             </div>
           ))
         ) : (

@@ -18,6 +18,15 @@ import { updateTime } from './time.js'
 
 let storage = {}
 
+// Lazily imported to avoid circular imports at module load time
+async function broadcastConfig() {
+  const { buildConfigMessage } = await import('./handlers/config.js')
+  serverManager.broadcast('config', buildConfigMessage())
+  // night mode settings live in the config; apply changes right away
+  const { checkNight } = await import('./night.js')
+  await checkNight()
+}
+
 const storageValueHandlers: Record<string, (value: unknown) => void> = {
   launchOnStartup: async value => {
     app.setLoginItemSettings({
@@ -33,6 +42,20 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
     await setBrightnessSmooth(null, value as number)
   },
   logLevel: async value => setLogLevel(value as LogLevel),
+  clientConfig: broadcastConfig,
+  macros: broadcastConfig,
+  weatherLocation: async () => {
+    const { invalidateWeather } = await import('./widgets/weather.js')
+    invalidateWeather()
+  },
+  weatherUnits: async () => {
+    const { invalidateWeather } = await import('./widgets/weather.js')
+    invalidateWeather()
+  },
+  calendars: async () => {
+    const { invalidateCalendar } = await import('./widgets/calendar.js')
+    invalidateCalendar()
+  },
   port: async p => {
     const newPort = p as number | null
     const info = serverManager.getServerInfo()
@@ -92,7 +115,20 @@ export function getStorageValue(key: string, secure = false) {
       )
       return value
     }
-    return safeStorage.decryptString(Buffer.from(value, 'hex')).toString()
+    try {
+      return safeStorage.decryptString(Buffer.from(value, 'hex')).toString()
+    } catch (err) {
+      // e.g. encrypted by another app (GlanceThing) with a different key;
+      // forget it so a fresh value is made instead of crashing startup
+      log(
+        `Couldn't decrypt ${key} (${err}); resetting it`,
+        'Storage',
+        LogLevel.WARN
+      )
+      delete storage[key]
+      writeStorage(storage)
+      return null
+    }
   } else {
     return value
   }

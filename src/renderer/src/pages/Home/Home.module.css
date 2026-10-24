@@ -27,7 +27,7 @@
   justify-content: center;
   padding: 8px 16px;
   border-radius: 5px;
-  background-color: #0064ff;
+  background-color: var(--brand);
   cursor: pointer;
   transition: opacity 200ms ease;
 }
@@ -56,7 +56,7 @@
 }
 
 .notice p span {
-  color: #0064ff;
+  color: var(--brand);
 }
 
 .notice[data-type='warning'] p span {
@@ -85,7 +85,7 @@
 }
 
 .update .title span {
-  color: #0064ff;
+  color: var(--brand);
   font-size: 22px;
 }
 
@@ -120,4 +120,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.status button.secondary {
+  background: transparent;
+  color: #9aa;
+  font-size: 14px;
+  padding: 6px 12px;
 }

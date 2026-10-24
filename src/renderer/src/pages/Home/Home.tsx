@@ -2,9 +2,12 @@ import React, { useContext, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import { DevModeContext } from '@/contexts/DevModeContext.js'
+import { ModalContext } from '@/contexts/ModalContext.js'
 
 import icon from '@/assets/icon.png'
 import iconNightly from '@/assets/icon-nightly.png'
+
+import Customize from '@/pages/Customize/Customize.js'
 
 import styles from './Home.module.css'
 import { ChannelContext } from '@/contexts/ChannelContext.js'
@@ -19,20 +22,25 @@ enum CarThingState {
 const Home: React.FC = () => {
   const navigate = useNavigate()
   const { devMode } = useContext(DevModeContext)
+  const { setModalOpen } = useContext(ModalContext)
   const { channel } = useContext(ChannelContext)
   const [hasCustomClient, setHasCustomClient] = useState(false)
 
+  // start on the settings page if the CarThing was ready last time, so
+  // launching doesn't flash the status page
   const [carThingState, setCarThingState] = useState<CarThingState | null>(
-    null
+    () => {
+      try {
+        return localStorage.getItem('lastCarThingState') === CarThingState.Ready
+          ? CarThingState.Ready
+          : null
+      } catch {
+        return null
+      }
+    }
   )
   const carThingStateRef = useRef(carThingState)
   const [needsPlaybackSetup, setNeedsPlaybackSetup] = useState(false)
-
-  const [updateInfo, setUpdateInfo] = useState<{
-    currentVersion: string
-    latestVersion: string
-    downloadUrl: string
-  } | null>(null)
 
   useEffect(() => {
     window.api.getStorageValue('setupComplete').then(setupComplete => {
@@ -44,6 +52,11 @@ const Home: React.FC = () => {
 
       setCarThingState(state)
       carThingStateRef.current = state
+      try {
+        localStorage.setItem('lastCarThingState', state)
+      } catch {
+        /* ignore */
+      }
     })
 
     const stateTimeout = setTimeout(() => {
@@ -56,17 +69,9 @@ const Home: React.FC = () => {
       if (handler === null) setNeedsPlaybackSetup(true)
     })
 
-    window.api.checkUpdate().then(setUpdateInfo)
-
-    const checkUpdateInterval = setInterval(
-      () => window.api.checkUpdate().then(setUpdateInfo),
-      1000 * 60 * 30
-    )
-
     return () => {
       removeListener()
       clearTimeout(stateTimeout)
-      clearInterval(checkUpdateInterval)
     }
   }, [])
 
@@ -77,10 +82,14 @@ const Home: React.FC = () => {
     updateHasCustomClient()
   }, [devMode])
 
+  // ready means there's nothing to report: go straight to the settings
+  if (carThingState === CarThingState.Ready && !needsPlaybackSetup)
+    return <Customize embedded />
+
   return (
     <div className={styles.home}>
       <img src={channel === 'nightly' ? iconNightly : icon} alt="" />
-      <h1>GlanceThing{channel === 'nightly' ? ' Nightly' : ''}</h1>
+      <h1>VibeThing{channel === 'nightly' ? ' Nightly' : ''}</h1>
       <div className={styles.status}>
         {carThingState === CarThingState.NotFound ? (
           <>
@@ -104,9 +113,20 @@ const Home: React.FC = () => {
             CarThing found, but the app is not installed. Installing...
           </p>
         ) : carThingState === CarThingState.Ready ? (
-          <p>CarThing is ready!</p>
+          <>
+            <p>CarThing is ready!</p>
+            <button onClick={() => setModalOpen('customize', true)}>
+              Customize screens & buttons{' '}
+              <span className="material-icons">dashboard_customize</span>
+            </button>
+          </>
         ) : (
           <p>Checking for CarThing...</p>
+        )}
+        {carThingState !== CarThingState.Ready && (
+          <button className={styles.secondary} onClick={() => setModalOpen('customize', true)}>
+            Customize anyway
+          </button>
         )}
       </div>
       {needsPlaybackSetup && carThingState === CarThingState.Ready ? (
@@ -131,25 +151,6 @@ const Home: React.FC = () => {
           >
             Remove
           </button>
-        </div>
-      ) : null}
-      {updateInfo &&
-      updateInfo.latestVersion !== updateInfo.currentVersion ? (
-        <div className={styles.update}>
-          <div className={styles.title}>
-            <span className="material-icons">download</span>A new
-            GlanceThing update is available!
-          </div>
-          <div className={styles.content}>
-            <p className={styles.version}>
-              {updateInfo.currentVersion}{' '}
-              <span className="material-icons">arrow_forward</span>{' '}
-              {updateInfo.latestVersion}
-            </p>
-            <button onClick={() => window.open(updateInfo.downloadUrl)}>
-              Download <span className="material-icons">open_in_new</span>
-            </button>
-          </div>
         </div>
       ) : null}
     </div>

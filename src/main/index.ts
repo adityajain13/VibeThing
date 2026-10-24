@@ -17,14 +17,17 @@ import {
 } from 'electron'
 
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import { join } from 'path'
+import path, { join } from 'path'
+import fs from 'fs'
+import { pathToFileURL } from 'url'
 
 import {
   getPlaybackHandlerConfig,
   getStorageValue,
   loadStorage,
   setPlaybackHandlerConfig,
-  setStorageValue
+  setStorageValue,
+  getSocketPassword
 } from './lib/storage.js'
 import {
   clearLogs,
@@ -76,8 +79,17 @@ import {
 
 import { playbackManager } from './lib/playback/playback.js'
 import { applyPatch, getPatches } from './lib/patches.js'
-import { getLatestVersion } from './lib/update.js'
 import { serverManager } from './lib/server.js'
+import { migrateFromGlanceThing } from './lib/migrate.js'
+import { getLocalClientDir } from './lib/webapp.js'
+import { exportSettings, importSettings } from './lib/backup.js'
+import { getVlcSettings, testVlc } from './lib/playback/vlc.js'
+import { geocode } from './lib/widgets/weather.js'
+import { listMixerTargets } from './lib/widgets/mixer.js'
+import { runMacroDefinition } from './lib/macros.js'
+import { parseKeys } from './lib/windowsHelper.js'
+import { getClientConfig, getMacros } from './lib/config.js'
+import { Macro } from './types/Config.js'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -114,7 +126,7 @@ function createWindow(): void {
 
       new Notification({
         title: 'Still Running!',
-        body: 'GlanceThing has been minimized to the system tray, and is still running in the background!'
+        body: 'VibeThing has been minimized to the system tray, and is still running in the background!'
       }).show()
     }
     mainWindow = null
@@ -141,12 +153,18 @@ app.on('second-instance', () => {
   }
 })
 
+// serves the CarThing client to the desktop app's live preview
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'gtpreview', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+])
+
 app.on('ready', async () => {
-  log('Welcome!', 'GlanceThing')
+  log('Welcome!', 'VibeThing')
 
   const gotLock = app.requestSingleInstanceLock()
   if (!gotLock) return app.quit()
 
+  migrateFromGlanceThing()
   loadStorage()
   setLogLevel(getStorageValue('logLevel') ?? LogLevel.INFO)
 
@@ -156,8 +174,8 @@ app.on('ready', async () => {
   ) {
     setStorageValue('devMode', true)
   }
-  if (isDev()) log('Running in development mode', 'GlanceThing')
-  electronApp.setAppUserModelId(`com.bludood.${app.getName()}`)
+  if (isDev()) log('Running in development mode', 'VibeThing')
+  electronApp.setAppUserModelId(isNightly ? 'com.vibething.app.nightly' : 'com.vibething.app')
 
   const adbPath = await getAdbExecutable().catch(err => ({ err }))
 
@@ -172,8 +190,11 @@ app.on('ready', async () => {
     else log(`Using downloaded ADB from path: ${adbPath}`, 'adb')
   }
 
+  // never let a server problem stop the window and CarThing checks
   if (getStorageValue('setupComplete') === true)
-    await serverManager.start()
+    await serverManager.start().catch(err =>
+      log(`Server failed to start: ${err}`, 'VibeThing', LogLevel.ERROR)
+    )
 
   await setupIpcHandlers()
   await setupTray()
@@ -188,6 +209,20 @@ app.on('ready', async () => {
     const path = getShortcutImagePath(name.split('?')[0])
     if (!path) return new Response(null, { status: 404 })
     return net.fetch(`file://${path}`)
+  })
+
+  protocol.handle('gtpreview', req => {
+    const dir = getLocalClientDir()
+    if (!dir) return new Response('no local client build', { status: 404 })
+    // the client is built for /usr/share/qt-superbird-app/webapp/ on the device
+    let rel = decodeURIComponent(new URL(req.url).pathname)
+      .replace(/^\/usr\/share\/qt-superbird-app\/webapp/, '')
+      .replace(/^\/+/, '')
+    if (!rel) rel = 'index.html'
+    const file = path.resolve(dir, rel)
+    if (!file.startsWith(path.resolve(dir)) || !fs.existsSync(file))
+      return new Response(null, { status: 404 })
+    return net.fetch(pathToFileURL(file).toString())
   })
 
   if (getStorageValue('launchMinimized') !== true) createWindow()
@@ -248,7 +283,21 @@ enum IPCHandler {
   GetChannel = 'getChannel',
   CheckUpdate = 'checkUpdate',
   FindOpenPort = 'findOpenPort',
-  IsPortOpen = 'isPortOpen'
+  IsPortOpen = 'isPortOpen',
+  GeocodeLocation = 'geocodeLocation',
+  TestMacro = 'testMacro',
+  GetMixerTargets = 'getMixerTargets',
+  ValidateKeys = 'validateKeys',
+  GetClientConfig = 'getClientConfig',
+  GetMacros = 'getMacros',
+  HasPreviewClient = 'hasPreviewClient',
+  ExportSettings = 'exportSettings',
+  ImportSettings = 'importSettings',
+  GetPreviewConnection = 'getPreviewConnection',
+  GetVlcSettings = 'getVlcSettings',
+  SaveVlcSettings = 'saveVlcSettings',
+  TestVlc = 'testVlc',
+  QuitApp = 'quitApp'
 }
 
 async function setupIpcHandlers() {
@@ -323,6 +372,17 @@ async function setupIpcHandlers() {
 
     if (found) {
       const installed = await checkInstalledApp(found)
+
+      // installed, but by another version of the app (or before the
+      // connection password changed): reinstall so they match
+      if (installed && getStorageValue('installedClientVersion') !== app.getVersion()) {
+        log(
+          `CarThing has an older client (${getStorageValue('installedClientVersion') ?? 'unknown'}); updating`,
+          'CarThingState'
+        )
+        mainWindow?.webContents.send('carThingState', 'installing')
+        await installApp(found)
+      }
 
       if (installed) {
         mainWindow?.webContents.send('carThingState', 'ready')
@@ -496,17 +556,8 @@ async function setupIpcHandlers() {
     return isNightly ? 'nightly' : 'stable'
   })
 
-  ipcMain.handle(IPCHandler.CheckUpdate, async () => {
-    const currentVersion = 'v' + app.getVersion()
-    const latestVersion = await getLatestVersion()
-    if (!latestVersion) return null
-
-    return {
-      currentVersion,
-      latestVersion: latestVersion.version,
-      downloadUrl: latestVersion.downloadUrl
-    }
-  })
+  // this fork doesn't check the official GlanceThing releases for updates
+  ipcMain.handle(IPCHandler.CheckUpdate, async () => null)
 
   ipcMain.handle(IPCHandler.FindOpenPort, async () => {
     return await findOpenPort()
@@ -514,6 +565,56 @@ async function setupIpcHandlers() {
 
   ipcMain.handle(IPCHandler.IsPortOpen, async (_event, port) => {
     return await isPortOpen(port as number)
+  })
+
+  ipcMain.handle(IPCHandler.GeocodeLocation, async (_event, query) => {
+    return await geocode(String(query)).catch(() => [])
+  })
+
+  ipcMain.handle(IPCHandler.TestMacro, async (_event, macro) => {
+    return await runMacroDefinition(macro as Macro)
+  })
+
+  ipcMain.handle(IPCHandler.GetMixerTargets, async () => {
+    return await listMixerTargets()
+  })
+
+  ipcMain.handle(IPCHandler.ValidateKeys, (_event, keys) => {
+    return parseKeys(String(keys)) !== null
+  })
+
+  ipcMain.handle(IPCHandler.GetClientConfig, () => getClientConfig())
+
+  ipcMain.handle(IPCHandler.GetMacros, () => getMacros())
+
+  ipcMain.handle(IPCHandler.HasPreviewClient, () => getLocalClientDir() !== null)
+
+  ipcMain.handle(IPCHandler.ExportSettings, () => exportSettings())
+
+  ipcMain.handle(IPCHandler.ImportSettings, () => importSettings())
+
+  ipcMain.handle(IPCHandler.GetVlcSettings, () => ({
+    ...getVlcSettings(),
+    hasPassword: !!getStorageValue('vlcPassword')
+  }))
+
+  ipcMain.handle(IPCHandler.SaveVlcSettings, (_e, s: { enabled: boolean; port: number; password?: string }) => {
+    setStorageValue('vlc', { enabled: !!s.enabled, port: Number(s.port) || 8080 })
+    if (typeof s.password === 'string') setStorageValue('vlcPassword', s.password, true)
+    return true
+  })
+
+  ipcMain.handle(IPCHandler.TestVlc, (_e, s: { port: number; password?: string }) =>
+    testVlc(Number(s.port) || 8080, typeof s.password === 'string' ? s.password : ((getStorageValue('vlcPassword', true) as string) ?? ''))
+  )
+
+  ipcMain.handle(IPCHandler.QuitApp, () => app.quit())
+
+  // lets the Customize preview read live data from our own server (read-only)
+  ipcMain.handle(IPCHandler.GetPreviewConnection, () => {
+    const info = serverManager.getServerInfo()
+    if (!info.running || !info.port) return null
+    return { port: info.port, password: getSocketPassword() }
   })
 }
 
@@ -528,7 +629,7 @@ async function setupTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: `GlanceThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`,
+      label: `VibeThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`,
       enabled: false
     },
     {
@@ -555,7 +656,7 @@ async function setupTray() {
   tray.setContextMenu(contextMenu)
 
   tray.setToolTip(
-    `GlanceThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`
+    `VibeThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`
   )
 
   tray.on('click', () => {

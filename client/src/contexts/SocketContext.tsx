@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useRef, useState } from 'react'
 
 import { getSocketPassword } from '@/lib/utils.ts'
+import { isPreview, PreviewSocket } from '@/lib/preview.ts'
 
 interface SocketContextProps {
   ready: boolean
@@ -26,6 +27,15 @@ const SocketContextProvider = ({
   const [firstLoad, setFirstLoad] = useState(true)
 
   function connect() {
+    if (isPreview) {
+      ws.current = new PreviewSocket() as unknown as WebSocket
+      ws.current.onopen = () => {
+        setReady(true)
+        setFirstLoad(false)
+      }
+      return
+    }
+
     ws.current = new WebSocket('ws://localhost:1337')
 
     ws.current.onopen = async () => {

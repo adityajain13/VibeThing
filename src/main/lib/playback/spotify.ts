@@ -5,7 +5,12 @@ import { TOTP } from 'totp-generator'
 import { log, random, safeParse } from '../utils.js'
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 
-import { Action, PlaybackData, RepeatMode } from '../../types/Playback.js'
+import {
+  Action,
+  PlaybackData,
+  QueueItem,
+  RepeatMode
+} from '../../types/Playback.js'
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36'
@@ -143,6 +148,7 @@ export async function refreshAccessToken(
 }
 
 interface SpotifyTrackItem {
+  uri: string
   name: string
   external_urls: {
     spotify: string
@@ -166,6 +172,7 @@ interface SpotifyTrackItem {
 }
 
 interface SpotifyEpisodeItem {
+  uri: string
   name: string
   external_urls: {
     spotify: string
@@ -224,7 +231,9 @@ const defaultSupportedActions: Action[] = [
   'pause',
   'next',
   'previous',
-  'image'
+  'image',
+  'seek',
+  'queue'
 ]
 
 export function filterData(
@@ -259,6 +268,7 @@ export function filterData(
       shuffle: shuffle_state,
       volume: device.volume_percent,
       track: {
+        id: item.uri,
         album: item.show.name,
         artists: [item.show.publisher],
         duration: {
@@ -281,6 +291,7 @@ export function filterData(
       shuffle: shuffle_state,
       volume: device.volume_percent,
       track: {
+        id: item.uri,
         album: item.album.name,
         artists: item.artists.map(a => a.name),
         duration: {
@@ -643,11 +654,129 @@ class SpotifyHandler extends BasePlaybackHandler {
     return res.data
   }
 
+  likedCache = new Map<string, boolean>()
+  libraryUnavailable = false
+  imageCache = new Map<string, string>()
+
   async getPlayback(): Promise<PlaybackData> {
     const current = await this.getCurrent()
     if (!current) return null
 
-    return filterData(current)
+    const data = filterData(current)
+    if (!data || !data.track.id || this.libraryUnavailable) return data
+
+    const liked = await this.isLiked(data.track.id)
+    if (liked === null) return data
+
+    data.track.liked = liked
+    data.supportedActions.push('like')
+    return data
+  }
+
+  private libraryDenied(status: number) {
+    if (status === 401 || status === 403) {
+      log(
+        'Library access denied - regenerate your refresh token with the user-library-read and user-library-modify scopes to enable liking',
+        'Spotify'
+      )
+      this.libraryUnavailable = true
+      return true
+    }
+    return false
+  }
+
+  async isLiked(uri: string): Promise<boolean | null> {
+    if (this.likedCache.has(uri)) return this.likedCache.get(uri)!
+
+    const res = await this.instance!.get('/me/library/contains', {
+      params: { uris: uri }
+    })
+    if (this.libraryDenied(res.status)) return null
+    if (res.status !== 200 || !Array.isArray(res.data)) return null
+
+    const liked = Boolean(res.data[0])
+    if (this.likedCache.size > 500) this.likedCache.clear()
+    this.likedCache.set(uri, liked)
+    return liked
+  }
+
+  async setLiked(liked: boolean): Promise<boolean> {
+    const current = await this.getCurrent()
+    const uri = current?.item?.uri
+    if (!uri || this.libraryUnavailable) return false
+
+    const method = liked ? 'put' : 'delete'
+    let res = await this.instance!.request({
+      method,
+      url: '/me/library',
+      params: { uris: uri }
+    })
+    if (res.status >= 400 && !this.libraryDenied(res.status)) {
+      // Some API versions expect the URIs in the body instead
+      res = await this.instance!.request({
+        method,
+        url: '/me/library',
+        data: { uris: [uri] }
+      })
+    }
+    if (this.libraryDenied(res.status) || res.status >= 400) return false
+
+    this.likedCache.set(uri, liked)
+    this.emit('playback', await this.getPlayback())
+    return true
+  }
+
+  async seek(positionMs: number): Promise<void> {
+    await this.instance!.put('/me/player/seek', null, {
+      params: { position_ms: positionMs }
+    })
+  }
+
+  private async smallImage(
+    images: { url: string; width: number }[] | undefined
+  ): Promise<string | undefined> {
+    if (!images || images.length === 0) return undefined
+    const smallest = [...images].sort(
+      (a, b) => (a.width ?? 0) - (b.width ?? 0)
+    )[0]
+    if (this.imageCache.has(smallest.url))
+      return this.imageCache.get(smallest.url)
+
+    const res = await axios
+      .get(smallest.url, { responseType: 'arraybuffer', timeout: 5000 })
+      .catch(() => null)
+    if (!res) return undefined
+
+    const dataUrl = `data:image/jpeg;base64,${Buffer.from(res.data).toString('base64')}`
+    if (this.imageCache.size > 200) this.imageCache.clear()
+    this.imageCache.set(smallest.url, dataUrl)
+    return dataUrl
+  }
+
+  async getQueue(): Promise<QueueItem[]> {
+    const res = await this.instance!.get('/me/player/queue')
+    if (res.status !== 200 || !Array.isArray(res.data?.queue)) return []
+
+    const items = (
+      res.data.queue as (SpotifyTrackItem | SpotifyEpisodeItem)[]
+    ).slice(0, 20)
+
+    return Promise.all(
+      items.map(async item => {
+        if ('album' in item) {
+          return {
+            name: item.name,
+            artists: item.artists.map(a => a.name),
+            image: await this.smallImage(item.album.images)
+          }
+        }
+        return {
+          name: item.name,
+          artists: [item.show?.name ?? ''],
+          image: await this.smallImage(item.images)
+        }
+      })
+    )
   }
 
   async play(): Promise<void> {

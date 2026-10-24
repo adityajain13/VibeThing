@@ -1,5 +1,5 @@
 import TypedEmitter from 'typed-emitter'
-import { WebSocketServer } from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 import EventEmitter from 'events'
 
 import {
@@ -11,6 +11,7 @@ import {
 import { log, LogLevel, safeParse } from '../lib/utils.js'
 import { runServerSetup } from './setup/setup.js'
 import { handlers } from './handlers/handlers.js'
+import { stopAllProviders } from './topics.js'
 
 import { AuthenticatedWebSocket } from '../types/WebSocketServer.js'
 
@@ -96,6 +97,7 @@ class ServerManager extends (EventEmitter as new () => TypedEmitter<{
 
       this.wss.on('close', async () => {
         await cleanup()
+        await stopAllProviders()
 
         this.wss = null
         this.emit('status', {
@@ -146,6 +148,16 @@ class ServerManager extends (EventEmitter as new () => TypedEmitter<{
       running: !!this.wss,
       port: this.port
     }
+  }
+
+  /** Send a message to every authenticated client */
+  broadcast(type: string, data: unknown, action?: string) {
+    if (!this.wss) return
+    const msg = JSON.stringify(action ? { type, action, data } : { type, data })
+    this.wss.clients.forEach((ws: AuthenticatedWebSocket) => {
+      if (!ws.authenticated || ws.readyState !== WebSocket.OPEN) return
+      ws.send(msg)
+    })
   }
 
   getServer(): WebSocketServer | null {

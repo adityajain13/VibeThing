@@ -20,8 +20,10 @@ const errors = {
     'Failed to download ADB. Make sure you have an active internet connection.',
   adb_extract_failed: 'Failed to extract ADB.',
   webapp_download_failed:
-    'Failed to download the GlanceThing client. Make sure you have an active internet connection.',
-  webapp_extract_failed: 'Failed to extract the GlanceThing client.'
+    'Failed to download the VibeThing client. Make sure you have an active internet connection.',
+  webapp_extract_failed: 'Failed to extract the VibeThing client.',
+  webapp_not_bundled:
+    'This build is missing its CarThing client. Re-download the app and try again.'
 }
 
 const InstallApp: React.FC<InstallAppProps> = ({ onStepComplete }) => {
@@ -48,10 +50,10 @@ const InstallApp: React.FC<InstallAppProps> = ({ onStepComplete }) => {
   return (
     <div className={styles.flash}>
       <p className={styles.step}>Step 2</p>
-      <h1>Install GlanceThing</h1>
+      <h1>Install VibeThing</h1>
       <p>
         Now that you have shell access to the Car Thing, you can install
-        GlanceThing.
+        VibeThing.
       </p>
       <p>
         This will not overwrite the original Spotify software, it will only

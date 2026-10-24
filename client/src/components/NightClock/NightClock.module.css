@@ -1,0 +1,38 @@
+.night {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 600ms ease;
+}
+
+.time {
+  font-size: calc(132px * var(--t-clock-s, 1) * var(--t-clock-time-s, 1));
+  font-weight: var(--t-clock-time-w, 800);
+  letter-spacing: -0.02em;
+  color: #8a8f99;
+  line-height: 1;
+}
+
+.date {
+  margin-top: 14px;
+  font-size: calc(24px * var(--t-clock-s, 1) * var(--t-clock-date-s, 1));
+  font-weight: var(--t-clock-date-w, 600);
+  color: #4c5059;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

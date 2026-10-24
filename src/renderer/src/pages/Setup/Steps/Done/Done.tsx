@@ -30,7 +30,7 @@ const Done: React.FC = () => {
     <div className={styles.done}>
       <img src={icon} alt="" onClick={() => celebrate()} />
       <h1>Setup Complete!</h1>
-      <p>Congratulations! Your GlanceThing is ready to use. Enjoy!</p>
+      <p>Congratulations! Your VibeThing is ready to use. Enjoy!</p>
       <div className={styles.buttons}>
         <button onClick={complete}>Complete</button>
       </div>

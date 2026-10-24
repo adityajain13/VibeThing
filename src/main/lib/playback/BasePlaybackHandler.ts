@@ -4,6 +4,7 @@ import TypedEmitter from 'typed-emitter'
 import {
   PlaybackData,
   PlaybackHandlerEvents,
+  QueueItem,
   RepeatMode
 } from '../../types/Playback.js'
 
@@ -24,4 +25,15 @@ export abstract class BasePlaybackHandler extends (EventEmitter as new () => Typ
   abstract shuffle(state: boolean): Promise<void>
   abstract repeat(stae: RepeatMode): Promise<void>
   abstract getImage(): Promise<Buffer | null>
+
+  // Optional capabilities. Handlers advertise support via supportedActions.
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  async seek(_positionMs: number): Promise<void> {}
+  async getQueue(): Promise<QueueItem[]> {
+    return []
+  }
+  async setLiked(_liked: boolean): Promise<boolean> {
+    return false
+  }
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 }

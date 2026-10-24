@@ -1,5 +1,15 @@
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
-import { log } from '../utils.js'
+import { log, LogLevel } from '../utils.js'
+import { windowsHelper } from '../windowsHelper.js'
+import {
+  getVlcSettings,
+  vlcArt,
+  vlcCommand,
+  vlcHasMedia,
+  vlcStatus,
+  vlcToPlayback,
+  type VlcStatus
+} from './vlc.js'
 
 import { PlaybackData, RepeatMode } from '../../types/Playback.js'
 import { createRequire } from 'node:module'
@@ -143,7 +153,8 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
     trackDuration,
     trackProgress,
     canChangeVolume,
-    canSkip
+    canSkip,
+    canFastForward
   } = data
 
   if (!trackName) {
@@ -162,6 +173,7 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
     shuffle: shuffleState ?? false,
     repeat: repeatStateMap[repeatState ?? 'off'],
     track: {
+      id: data.id ?? `${trackName}::${(artist ?? []).join(',')}`,
       name: trackName,
       artists: artist ?? [],
       album: album ?? '',
@@ -176,9 +188,28 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
   if (canChangeVolume) playbackData.supportedActions.push('volume')
   if (canSkip) playbackData.supportedActions.push('next', 'previous')
   if (data.thumbnail) playbackData.supportedActions.push('image')
+  if (canFastForward && trackDuration) playbackData.supportedActions.push('seek')
 
   return playbackData
 }
+
+/** What Windows itself reports for the current media session (see windowsHelper) */
+interface WindowsTimeline {
+  ok: boolean
+  session?: boolean
+  error?: string
+  app?: string
+  title?: string
+  status?: string
+  rate?: number
+  start?: number
+  end?: number
+  position?: number
+  updated?: number
+  now?: number
+}
+
+const norm = (t: string | undefined) => (t ?? '').trim().toLowerCase()
 
 class NativeHandler extends BasePlaybackHandler {
   name: string = 'native'
@@ -186,9 +217,135 @@ class NativeHandler extends BasePlaybackHandler {
 
   instance: NowPlaying | null = null
   current: NowPlayingMessage | null = null
+  /** when `current` arrived, so later reads can report the live position */
+  receivedAt = 0
+
+  /**
+   * Length/position read straight from Windows. The addon's values can be
+   * missing or stale for browser video (YouTube), so this corrects them.
+   */
+  timeline: { title: string; duration: number; position: number; at: number; playing: boolean } | null = null
+  private timelineTimer: NodeJS.Timeout | null = null
+  private lastSent: { duration: number; position: number; at: number } | null = null
+
+  /** VLC via its web interface takes over while it's playing (optional) */
+  private vlc: VlcStatus | null = null
+  private vlcAt = 0
+  private vlcActive = false
+  private vlcSig = ''
+  private vlcTimer: NodeJS.Timeout | null = null
+
+  private vlcData(): PlaybackData | null {
+    if (!this.vlc) return null
+    const data = vlcToPlayback(this.vlc)
+    if (data.isPlaying) {
+      const t = data.track.duration
+      t.current = Math.min(t.total || Infinity, t.current + (Date.now() - this.vlcAt))
+    }
+    return data
+  }
+
+  private async pollVlc() {
+    if (!getVlcSettings().enabled) {
+      if (this.vlcActive) {
+        this.vlcActive = false
+        this.emit('playback', await this.getPlayback())
+      }
+      return
+    }
+    const s = await vlcStatus()
+    const nativePlaying = !!this.current?.isPlaying
+    const active = vlcHasMedia(s) && (s.state === 'playing' || (!nativePlaying && (this.vlcActive || !this.current)))
+    if (!active) {
+      if (this.vlcActive) {
+        this.vlcActive = false
+        this.vlc = null
+        log('VLC stopped; back to Windows media', 'Native')
+        this.emit('playback', await this.getPlayback())
+      }
+      return
+    }
+    const before = this.vlcData()
+    this.vlc = s
+    this.vlcAt = Date.now()
+    const data = this.vlcData()!
+    const sig = [data.track.id, data.isPlaying, data.volume, data.shuffle, data.repeat, Math.round(data.track.duration.total / 1000)].join('|')
+    const drift = before ? Math.abs(before.track.duration.current - data.track.duration.current) : Infinity
+    if (!this.vlcActive) log(`Using VLC: ${data.track.name}`, 'Native')
+    if (!this.vlcActive || sig !== this.vlcSig || drift > 2000) {
+      this.vlcActive = true
+      this.vlcSig = sig
+      this.emit('playback', data)
+    }
+  }
+
+  private async afterVlcCommand() {
+    await new Promise(r => setTimeout(r, 150))
+    this.vlcSig = ''
+    await this.pollVlc()
+  }
+  private loggedFor = ''
+  private timelineErrors = 0
+  private timelineSkips = 0
+
+  private async pollTimeline() {
+    const cur = this.current
+    // VLC owns the card, or nothing is playing: no need to ask Windows every second
+    if (!cur || this.vlcActive) return
+    if (!cur.isPlaying && this.timeline && this.timelineSkips++ % 5 !== 0) return
+    const t = await windowsHelper.call<WindowsTimeline>('timeline')
+    if (!t || !t.ok) {
+      if (t?.error && this.timelineErrors++ < 3)
+        log(`Windows timeline unavailable: ${t.error}`, 'Native', LogLevel.WARN)
+      return
+    }
+    if (!t.session || norm(t.title) !== norm(cur.trackName) || !t.end || t.end <= (t.start ?? 0)) {
+      this.timeline = null
+      return
+    }
+    const start = t.start ?? 0
+    const duration = t.end - start
+    const playing = t.status === 'Playing'
+    let position = (t.position ?? 0) - start
+    // Windows gives the position as of `updated`; advance it to now
+    if (playing && t.updated && t.now) position += Math.max(0, t.now - t.updated) * (t.rate || 1)
+    position = Math.max(0, Math.min(duration, position))
+    this.timeline = { title: cur.trackName, duration, position, at: Date.now(), playing }
+
+    if (this.loggedFor !== cur.trackName) {
+      this.loggedFor = cur.trackName
+      log(
+        `Timeline for "${cur.trackName}" (${t.app}): Windows ${Math.round(position / 1000)}s / ${Math.round(duration / 1000)}s, ` +
+          `addon ${Math.round((cur.trackProgress ?? 0) / 10000 / 1000)}s / ${Math.round((cur.trackDuration ?? 0) / 10000 / 1000)}s`,
+        'Native'
+      )
+    }
+
+    // only push to the CarThing when it would otherwise be visibly wrong
+    const last = this.lastSent
+    const predicted = last ? last.position + (playing ? Date.now() - last.at : 0) : -1
+    if (!last || Math.abs(last.duration - duration) > 1000 || Math.abs(predicted - position) > 2000) {
+      const data = await this.getPlayback()
+      if (data) this.emit('playback', data)
+    }
+  }
+
+  /** Overlay the Windows timeline onto addon data for the same track */
+  private applyTimeline(data: PlaybackData) {
+    const tl = this.timeline
+    if (!data || !tl || norm(tl.title) !== norm(data.track.name) || Date.now() - tl.at > 5000) return data
+    data.track.duration.total = tl.duration
+    data.track.duration.current = Math.min(tl.duration, tl.position + (tl.playing && data.isPlaying ? Date.now() - tl.at : 0))
+    this.lastSent = { duration: tl.duration, position: data.track.duration.current, at: Date.now() }
+    return data
+  }
 
   async setup(): Promise<void> {
     log('Setting up', 'Native')
+
+    this.vlcTimer = setInterval(() => {
+      this.pollVlc().catch(err => log(`VLC poll failed: ${err}`, 'Native', LogLevel.WARN))
+    }, 1000)
 
     const addon = importAddon()
     if (!addon) return
@@ -197,8 +354,12 @@ class NativeHandler extends BasePlaybackHandler {
       async (event: NowPlayingMessage) => {
         const data = filterData(event)
         if (data) {
+          if (this.current && norm(this.current.trackName) !== norm(event.trackName)) this.timeline = null
           this.current = event
-          this.emit('playback', data)
+          this.receivedAt = Date.now()
+          // VLC is showing; Windows updates would make the card flicker
+          if (this.vlcActive) return
+          this.emit('playback', this.applyTimeline(data))
         }
       }
     ) as NowPlaying
@@ -206,11 +367,25 @@ class NativeHandler extends BasePlaybackHandler {
     await instance.subscribe()
 
     this.instance = instance
+
+    if (windowsHelper.supported) {
+      this.timelineTimer = setInterval(() => {
+        this.pollTimeline().catch(err => log(`Timeline poll failed: ${err}`, 'Native', LogLevel.WARN))
+      }, 1000)
+    }
   }
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Native')
 
+    if (this.timelineTimer) clearInterval(this.timelineTimer)
+    this.timelineTimer = null
+    if (this.vlcTimer) clearInterval(this.vlcTimer)
+    this.vlcTimer = null
+    this.vlcActive = false
+    this.vlc = null
+    this.timeline = null
+    this.lastSent = null
     this.instance?.unsubscribe()
     this.instance = null
     this.removeAllListeners()
@@ -221,49 +396,82 @@ class NativeHandler extends BasePlaybackHandler {
   }
 
   async getPlayback(): Promise<PlaybackData> {
+    if (this.vlcActive) return this.vlcData()
     if (!this.current) return null
-    return filterData(this.current)
+    const data = filterData(this.current)
+    // the last event's progress is as old as the event; advance it to now,
+    // otherwise a client asking later gets a stale elapsed time
+    if (data && data.isPlaying) {
+      const rate = this.current.playbackRate ?? 1
+      const advanced = data.track.duration.current + (Date.now() - this.receivedAt) * rate
+      const total = data.track.duration.total
+      data.track.duration.current = total > 0 ? Math.min(total, advanced) : advanced
+    }
+    return this.applyTimeline(data)
   }
 
   async play(): Promise<void> {
+    if (this.vlcActive) return void (await vlcCommand('pl_forceresume'), await this.afterVlcCommand())
     if (!this.instance) return
 
     await this.instance.play()
   }
 
   async pause(): Promise<void> {
+    if (this.vlcActive) return void (await vlcCommand('pl_forcepause'), await this.afterVlcCommand())
     if (!this.instance) return
 
     await this.instance.pause()
   }
 
   async setVolume(volume: number): Promise<void> {
+    if (this.vlcActive)
+      return void (await vlcCommand('volume', Math.round((volume / 100) * 256)), await this.afterVlcCommand())
     if (!this.instance) return
 
     await this.instance.setVolume(volume)
   }
 
   async next(): Promise<void> {
+    if (this.vlcActive) return void (await vlcCommand('pl_next'), await this.afterVlcCommand())
     if (!this.instance) return
 
     await this.instance.nextTrack()
   }
 
   async previous(): Promise<void> {
+    if (this.vlcActive) return void (await vlcCommand('pl_previous'), await this.afterVlcCommand())
     if (!this.instance) return
 
     await this.instance.previousTrack()
   }
 
-  async shuffle(): Promise<void> {
-    throw new Error('Not implemented')
+  async seek(positionMs: number): Promise<void> {
+    if (this.vlcActive)
+      return void (await vlcCommand('seek', Math.max(0, Math.round(positionMs / 1000))), await this.afterVlcCommand())
+    if (!this.instance) return
+
+    await this.instance.seekTo(positionMs)
   }
 
-  async repeat(): Promise<void> {
-    throw new Error('Not implemented')
+  async shuffle(state: boolean): Promise<void> {
+    if (!this.vlcActive || !this.vlc) throw new Error('Not implemented')
+    if (!!this.vlc.random !== state) await vlcCommand('pl_random')
+    await this.afterVlcCommand()
+  }
+
+  async repeat(state: RepeatMode): Promise<void> {
+    if (!this.vlcActive || !this.vlc) throw new Error('Not implemented')
+    // VLC has two toggles: loop (all) and repeat (one)
+    const wantLoop = state === 'on'
+    const wantOne = state === 'one'
+    if (!!this.vlc.loop !== wantLoop) await vlcCommand('pl_loop')
+    if (!!this.vlc.repeat !== wantOne) await vlcCommand('pl_repeat')
+    await this.afterVlcCommand()
   }
 
   async getImage(): Promise<Buffer | null> {
+    if (this.vlcActive) return vlcArt(this.vlc)
     const thumb = this.current?.thumbnail
     if (!thumb) return null
 

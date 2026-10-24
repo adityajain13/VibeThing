@@ -1,0 +1,56 @@
+.overlay {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: rgba(20, 22, 26, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.overlay[data-fixed='true'] {
+  position: fixed;
+  left: 120px;
+  right: 120px;
+  bottom: 24px;
+  z-index: 1500;
+}
+
+.overlay[data-shown='true'] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.overlay span {
+  font-size: 26px;
+}
+
+.bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  margin: 0 14px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms ease;
+}
+
+.value {
+  font-size: 18px !important;
+  font-weight: 700;
+  min-width: 34px;
+  text-align: right;
+}

@@ -1,5 +1,4 @@
 import { app, dialog } from 'electron'
-import axios from 'axios'
 import path from 'path'
 import fs from 'fs'
 
@@ -17,72 +16,33 @@ export async function getWebAppDir() {
     return path.join(app.getPath('userData'), 'customClient')
   }
 
+  // this fork ships its own client inside the installer (extraResources)
+  const bundled = path.join(process.resourcesPath ?? '', 'client')
+  if (app.isPackaged && fs.existsSync(path.join(bundled, 'index.html'))) {
+    log('Using bundled client webapp', 'Client Webapp')
+    return bundled
+  }
+
   if (isDev() && fs.existsSync(path.join(process.cwd(), 'client/dist'))) {
     log('Using local client webapp', 'Client Webapp')
     return path.join(process.cwd(), 'client/dist')
   }
 
-  log('Downloading...', 'Client Webapp')
-  const version = app.getVersion()
-  const tempDir = app.getPath('temp')
+  // this fork always ships its own client; never fall back to the official one
+  log('No bundled client webapp found', 'Client Webapp', LogLevel.ERROR)
+  throw new Error('webapp_not_bundled')
+}
 
-  const zipPath = path.join(tempDir, `glancething-client-v${version}.zip`)
-  const extractPath = path.join(tempDir, `glancething-client-v${version}`)
-
-  if (fs.existsSync(zipPath)) fs.rmSync(zipPath)
-
-  if (fs.existsSync(extractPath))
-    fs.rmSync(extractPath, { recursive: true })
-
-  const url = `https://github.com/BluDood/GlanceThing/releases/download/v${version}/glancething-client-v${version}.zip`
-
-  const res = await axios.get(url, {
-    responseType: 'stream',
-    validateStatus: () => true
-  })
-
-  if (res.status !== 200) {
-    log(
-      'Failed to download client webapp',
-      'Client Webapp',
-      LogLevel.ERROR
-    )
-    throw new Error('webapp_download_failed')
-  }
-
-  const writeStream = fs.createWriteStream(zipPath)
-
-  res.data.pipe(writeStream)
-
-  await new Promise<void>((resolve, reject) => {
-    writeStream.on('finish', resolve)
-    writeStream.on('error', reject)
-  })
-
-  log(
-    'Sucessfully downloaded, extracting...',
-    'Client Webapp',
-    LogLevel.DEBUG
-  )
-
-  if (!fs.existsSync(extractPath)) fs.mkdirSync(extractPath)
-
-  const unzipCommand = buildUnzipCommand(zipPath, extractPath)
-  if (!unzipCommand) {
-    log('Failed to find unzip command for platform', 'adb', LogLevel.ERROR)
-    throw new Error('adb_platform_not_found')
-  }
-
-  const extract = await execAsync(unzipCommand).catch(() => null)
-
-  if (extract === null) {
-    log('Failed to extract client webapp', 'Client Webapp', LogLevel.ERROR)
-    throw new Error('webapp_extract_failed')
-  }
-
-  log('Downloaded!', 'Client Webapp')
-
-  return extractPath
+/** A client build available on this PC without downloading (for previews) */
+export function getLocalClientDir(): string | null {
+  const candidates = [
+    app.isPackaged ? path.join(process.resourcesPath, 'client') : null,
+    path.join(process.cwd(), 'client/dist'),
+    hasCustomWebApp() ? path.join(app.getPath('userData'), 'customClient') : null
+  ]
+  for (const dir of candidates)
+    if (dir && fs.existsSync(path.join(dir, 'index.html'))) return dir
+  return null
 }
 
 export function hasCustomWebApp() {
@@ -97,7 +57,7 @@ export function hasCustomWebApp() {
 export async function importCustomWebApp() {
   const res = await dialog.showOpenDialog({
     properties: ['openFile'],
-    filters: [{ name: 'GlanceThing Client', extensions: ['zip'] }]
+    filters: [{ name: 'VibeThing Client', extensions: ['zip'] }]
   })
 
   if (res.canceled) return false

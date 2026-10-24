@@ -1,271 +1,221 @@
-import {
-  KeyboardEvent,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  WheelEvent
-} from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 
-import { formatTime } from '@/lib/utils.ts'
+import { activeLyricIndex, MediaContext, usePosition } from '@/contexts/MediaContext.tsx'
+import { ConfigContext } from '@/contexts/ConfigContext.tsx'
+import { UIContext } from '@/contexts/UIContext.tsx'
 
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
+import Progress from '@/components/Progress/Progress.tsx'
+import VolumeOverlay from '@/components/VolumeOverlay/VolumeOverlay.tsx'
 
 import styles from './Player.module.css'
-import { MediaContext } from '@/contexts/MediaContext.tsx'
+
+const LyricLine: React.FC = () => {
+  const { lyrics } = useContext(MediaContext)
+  const position = usePosition(300)
+  const idx = activeLyricIndex(lyrics, position)
+  const line = idx >= 0 ? lyrics!.synced![idx].text : ''
+
+  return (
+    <p className={styles.lyric} key={idx}>
+      {line || ' '}
+    </p>
+  )
+}
 
 const Player: React.FC = () => {
-  const { actions, playerData, playerDataRef, image } =
-    useContext(MediaContext)
+  const { actions, playerData, playerDataRef, image, lyrics, supports } = useContext(MediaContext)
+  const config = useContext(ConfigContext)
+  const { setFullscreen } = useContext(UIContext)
 
   const playerRef = useRef<HTMLDivElement>(null)
-  const imageDivRef = useRef<HTMLDivElement>(null)
-
-  const [volume, setVolume] = useState(0)
-  const volumeRef = useRef(volume)
-  const lastVolumeChange = useRef(0)
-  const [volumeAdjusted, setVolumeAdjusted] = useState(false)
 
   const coverClicks = useRef(0)
-  const coverClickTimer = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  )
-
-  const [coverAction, setCoverAction] = useState<
-    'play' | 'pause' | 'forward' | 'back' | null
-  >(null)
-
-  function volumeUp() {
-    if (playerDataRef.current === null) return
-    if (!playerDataRef.current.supportedActions.includes('volume')) return
-
-    const volume = volumeRef.current
-
-    if (volume < 100) {
-      const newVolume = Math.min(volume + 10, 100)
-
-      actions.setVolume(newVolume)
-      setVolume(newVolume)
-      volumeRef.current = newVolume
-      lastVolumeChange.current = Date.now()
-    }
-  }
-
-  function volumeDown() {
-    if (playerDataRef.current === null) return
-    if (!playerDataRef.current.supportedActions.includes('volume')) return
-
-    const volume = volumeRef.current
-
-    if (volume > 0) {
-      const newVolume = Math.max(volume - 10, 0)
-      actions.setVolume(newVolume)
-
-      setVolume(newVolume)
-      volumeRef.current = newVolume
-      lastVolumeChange.current = Date.now()
-    }
-  }
+  const coverClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [coverAction, setCoverAction] = useState<string | null>(null)
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    if (e.key === 'Enter') {
-      actions.playPause()
-    } else if (e.key === 'ArrowLeft') {
-      onWheel({ deltaX: -1 } as WheelEvent<HTMLDivElement>)
-    } else if (e.key === 'ArrowRight') {
-      onWheel({ deltaX: 1 } as WheelEvent<HTMLDivElement>)
-    }
+    if (e.key === 'Enter') actions.playPause()
+    else if (e.key === 'ArrowLeft') actions.changeVolume(-1)
+    else if (e.key === 'ArrowRight') actions.changeVolume(1)
   }
 
-  function onWheel(e: WheelEvent<HTMLDivElement>) {
-    if (e.deltaX < 0) {
-      volumeDown()
-    } else if (e.deltaX > 0) {
-      volumeUp()
+  // knob turns adjust volume while the player is focused
+  useEffect(() => {
+    const listener = (e: WheelEvent) => {
+      if (!playerRef.current?.matches(':focus-within') || e.deltaX === 0) return
+      e.preventDefault()
+      actions.changeVolume(e.deltaX > 0 ? 1 : -1)
     }
-  }
+    document.addEventListener('wheel', listener, { passive: false })
+    return () => document.removeEventListener('wheel', listener)
+  })
 
+  // tap: play/pause, double tap: next, triple tap: previous
   function handleCoverPress() {
     coverClicks.current++
-
-    if (coverClickTimer.current !== null)
-      clearTimeout(coverClickTimer.current)
-
+    if (coverClickTimer.current) clearTimeout(coverClickTimer.current)
     coverClickTimer.current = setTimeout(() => {
       if (coverClicks.current === 1) {
-        setCoverAction(playerDataRef.current!.isPlaying ? 'pause' : 'play')
+        setCoverAction(playerDataRef.current?.isPlaying ? 'pause' : 'play_arrow')
         actions.playPause()
-      } else if (coverClicks.current === 2) {
-        setCoverAction('forward')
+      } else if (coverClicks.current === 2 && supports('next')) {
+        setCoverAction('skip_next')
         actions.skipForward()
-      } else if (coverClicks.current === 3) {
-        setCoverAction('back')
+      } else if (coverClicks.current >= 3 && supports('previous')) {
+        setCoverAction('skip_previous')
         actions.skipBackward()
       }
-
       coverClicks.current = 0
-    }, 200)
+    }, 220)
   }
 
   useEffect(() => {
-    if (coverAction) {
-      const timer = setTimeout(() => {
-        setCoverAction(null)
-      }, 500)
-
-      return () => {
-        clearTimeout(timer)
-      }
-    }
+    if (!coverAction) return
+    const t = setTimeout(() => setCoverAction(null), 600)
+    return () => clearTimeout(t)
   }, [coverAction])
 
-  useEffect(() => {
-    setVolumeAdjusted(true)
-    const timer = setTimeout(() => {
-      setVolumeAdjusted(false)
-    }, 2000)
+  const showLyric = config.playerLyricsLine && Boolean(lyrics?.synced?.length)
+  const p = config.player
 
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [volume])
-
+  // The cover is sized in px from measured space. The CarThing runs Chrome 69,
+  // where % heights inside the flex layout don't resolve (the art spilled over
+  // the text) and CSS min() doesn't exist.
+  //  - stacked: a square filling the space left above the text
+  //  - side: a square fitting the slot height and half its width
+  const coverRef = useRef<HTMLButtonElement>(null)
+  const [coverPx, setCoverPx] = useState<{ w: number; h: number } | null>(null)
+  // width / height of the current art; video thumbnails are usually 16:9
+  const [aspect, setAspect] = useState(1)
   useEffect(() => {
-    if (playerData) {
-      if (lastVolumeChange.current < Date.now() - 1000) {
-        setVolume(playerData.volume)
-        volumeRef.current = playerData.volume
+    if (!image) return setAspect(1)
+    const img = new Image()
+    img.onload = () => setAspect(img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1)
+    img.src = image
+  }, [image])
+  const trackKey = playerData ? `${playerData.track.name}|${playerData.track.artists.join(',')}` : ''
+  useEffect(() => {
+    const el = playerRef.current
+    if (!el) return
+    const measure = () => {
+      const cover = coverRef.current
+      if (!cover) return
+      const cs = getComputedStyle(el)
+      const scale = p.coverSize / 100
+      let maxW: number, maxH: number
+      if (cs.flexDirection === 'row') {
+        maxH = el.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
+        // wide art may take a little more of the row than square art
+        maxW = (el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)) * (aspect > 1.1 ? 0.58 : 0.5)
+      } else {
+        maxH = cover.clientHeight
+        maxW = cover.clientWidth
       }
-
-      const height = imageDivRef.current!.parentElement!.clientHeight
-
-      imageDivRef.current!.style.width = `${height}px`
-      imageDivRef.current!.style.height = `${height}px`
+      // largest box with the art's proportions that fits, then scaled
+      const w = Math.min(maxW, maxH * aspect) * scale
+      const next = { w: Math.max(40, Math.floor(w)), h: Math.max(40, Math.floor(w / aspect)) }
+      setCoverPx(prev => (prev && prev.w === next.w && prev.h === next.h ? prev : next))
     }
-  }, [playerData])
-
-  useEffect(() => {
-    const listener = (e: globalThis.WheelEvent) => {
-      if (playerRef.current!.matches(':focus-within')) {
-        e.preventDefault()
-        onWheel({
-          deltaX: e.deltaX
-        } as WheelEvent<HTMLDivElement>)
-      }
-    }
-
-    document.addEventListener('wheel', listener, {
-      passive: false
-    })
-
+    measure()
+    window.addEventListener('resize', measure)
+    // again once BaseWidget has settled its size class and fonts have loaded
+    const t1 = setTimeout(measure, 60)
+    const t2 = setTimeout(measure, 500)
+    const fonts = (document as unknown as { fonts?: { ready: Promise<unknown> } }).fonts
+    fonts?.ready.then(measure)
     return () => {
-      document.removeEventListener('wheel', listener)
+      window.removeEventListener('resize', measure)
+      clearTimeout(t1)
+      clearTimeout(t2)
     }
-  })
+  }, [p.layout, p.coverSize, p.textScale, p.controlsScale, p.showControls, p.showProgress, p.showTimes, showLyric, trackKey, aspect])
+
+  const vars = {
+    ...(coverPx ? { '--cover-w': `${coverPx.w}px`, '--cover-h': `${coverPx.h}px` } : {}),
+    '--cover-size': p.coverSize / 100,
+    '--controls-scale': p.controlsScale / 100
+  } as React.CSSProperties
 
   return (
     <BaseWidget
       className={styles.player}
       onKeyDown={onKeyDown}
       ref={playerRef}
+      style={vars}
+      data-layout={p.layout}
+      data-cover-align={p.coverAlign}
+      data-text-align={p.textAlign}
     >
       {playerData ? (
         <>
-          <button onMouseDown={handleCoverPress} className={styles.cover}>
-            <div
-              className={styles.action}
-              data-shown={coverAction !== null}
-            >
-              <span
-                className="material-icons"
-                data-shown={coverAction === 'play'}
-              >
-                play_arrow
-              </span>
-              <span
-                className="material-icons"
-                data-shown={coverAction === 'pause'}
-              >
-                pause
-              </span>
-              <span
-                className="material-icons"
-                data-shown={coverAction === 'forward'}
-              >
-                skip_next
-              </span>
-              <span
-                className="material-icons"
-                data-shown={coverAction === 'back'}
-              >
-                skip_previous
-              </span>
-            </div>
-            <div className={styles.image} ref={imageDivRef}>
-              {image ? (
-                <img src={image} />
-              ) : (
-                <span className="material-icons">music_note</span>
+          {image && p.glow && <img className={styles.glow} src={image} alt="" />}
+          <button
+            className={styles.cover}
+            onMouseDown={handleCoverPress}
+            ref={coverRef}
+            data-measured={coverPx !== null}
+          >
+            {image ? (
+              <img src={image} alt="" />
+            ) : (
+              <span className={`material-icons ${styles.placeholder}`}>music_note</span>
+            )}
+            <span className={`material-icons ${styles.action}`} data-shown={coverAction !== null}>
+              {coverAction}
+            </span>
+          </button>
+          <div className={styles.meta}>
+            <div className={styles.titleRow} data-like={p.showLike && supports('like')}>
+              <div className={styles.text} onClick={() => setFullscreen('cover')}>
+                <p className={styles.name}>{playerData.track.name}</p>
+                <p className={styles.artists}>{playerData.track.artists.join(', ')}</p>
+              </div>
+              {p.showLike && supports('like') && (
+                <button
+                  className={styles.like}
+                  data-liked={playerData.track.liked === true}
+                  onClick={actions.toggleLike}
+                  aria-label={playerData.track.liked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
+                >
+                  <span className="material-icons">
+                    {playerData.track.liked ? 'favorite' : 'favorite_border'}
+                  </span>
+                </button>
               )}
             </div>
-          </button>
-          <span className={styles.name}>{playerData.track.name}</span>
-          <span className={styles.artists}>
-            {playerData.track.artists.join(', ')}
-          </span>
-          <div className={styles.controls}>
-            <button onMouseDown={actions.skipBackward}>
-              <span className="material-icons">skip_previous</span>
-            </button>
-            <button onMouseDown={actions.playPause}>
-              <span className="material-icons">
-                {playerData.isPlaying ? 'pause' : 'play_arrow'}
-              </span>
-            </button>
-            <button onMouseDown={actions.skipForward}>
-              <span className="material-icons">skip_next</span>
-            </button>
-          </div>
-          <div className={styles.progress}>
-            <p>{formatTime(playerData.track.duration.current)}</p>
-            <div className={styles.slider}>
-              <div
-                className={styles.fill}
-                style={{
-                  width: `${
-                    (playerData.track.duration.current /
-                      playerData.track.duration.total) *
-                    100
-                  }%`
-                }}
-              ></div>
-            </div>
-            <p>{formatTime(playerData.track.duration.total)}</p>
-          </div>
-          {playerData.supportedActions.includes('volume') && (
-            <div className={styles.volume} data-shown={volumeAdjusted}>
-              <button onMouseDown={volumeDown}>
-                <span className="material-icons"> volume_down </span>
-              </button>
-              <div className={styles.slider}>
-                <div
-                  className={styles.fill}
-                  style={{ width: `${volume}%` }}
-                ></div>
+            {showLyric && (
+              <div onClick={() => setFullscreen('lyrics')}>
+                <LyricLine />
               </div>
-              <button onMouseDown={volumeUp}>
-                <span className="material-icons"> volume_up </span>
-              </button>
-            </div>
-          )}
+            )}
+            {p.showProgress && <Progress className={styles.progress} showTimes={p.showTimes} />}
+            {p.showControls && (
+              <div className={styles.controls}>
+                {supports('previous') && (
+                  <button onMouseDown={actions.skipBackward} aria-label="Previous">
+                    <span className="material-icons">skip_previous</span>
+                  </button>
+                )}
+                <button className={styles.play} onMouseDown={actions.playPause} aria-label={playerData.isPlaying ? 'Pause' : 'Play'}>
+                  <span className="material-icons">{playerData.isPlaying ? 'pause' : 'play_arrow'}</span>
+                </button>
+                {supports('next') && (
+                  <button onMouseDown={actions.skipForward} aria-label="Next">
+                    <span className="material-icons">skip_next</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          <VolumeOverlay />
         </>
       ) : (
         <div className={styles.notPlaying}>
           <span className="material-icons">music_note</span>
-          <p className={styles.title}>Nothing playing!</p>
-          <p className={styles.note}>
-            Start playing something on your computer.
-          </p>
+          <p className={styles.title}>Nothing playing</p>
+          <p className={styles.note}>Start something on your PC and it shows up here.</p>
         </div>
       )}
     </BaseWidget>

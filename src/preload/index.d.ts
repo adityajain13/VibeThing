@@ -75,6 +75,26 @@ declare global {
       } | null>
       findOpenPort: () => Promise<number>
       isPortOpen: (port: number) => Promise<boolean>
+      geocodeLocation: (
+        query: string
+      ) => Promise<{ name: string; latitude: number; longitude: number }[]>
+      testMacro: (macro: unknown) => Promise<boolean>
+      getMixerTargets: () => Promise<{ id: string; name: string }[] | null>
+      validateKeys: (keys: string) => Promise<boolean>
+      getClientConfig: () => Promise<unknown>
+      getMacros: () => Promise<unknown[]>
+      hasPreviewClient: () => Promise<boolean>
+      exportSettings: () => Promise<
+        { ok: true; path: string; count: number } | { ok: false; canceled?: boolean; error?: string }
+      >
+      getPreviewConnection: () => Promise<{ port: number; password: string } | null>
+      getVlcSettings: () => Promise<{ enabled: boolean; port: number; hasPassword: boolean }>
+      saveVlcSettings: (s: { enabled: boolean; port: number; password?: string }) => Promise<boolean>
+      testVlc: (s: { port: number; password?: string }) => Promise<'ok' | 'auth' | 'offline'>
+      quitApp: () => Promise<void>
+      importSettings: () => Promise<
+        { ok: true; count: number } | { ok: false; canceled?: boolean; error?: string }
+      >
     }
   }
 }

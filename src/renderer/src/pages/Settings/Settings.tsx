@@ -10,13 +10,12 @@ import styles from './Settings.module.css'
 
 import icon from '@/assets/icon.png'
 import iconNightly from '@/assets/icon-nightly.png'
+import adij13 from '@/assets/adij13.png'
 import { useNavigate } from 'react-router-dom'
 import { ChannelContext } from '@/contexts/ChannelContext.js'
 
 enum Tab {
   General,
-  Client,
-  Appearance,
   Startup,
   Advanced,
   Logs,
@@ -66,20 +65,6 @@ const Settings: React.FC = () => {
               General
             </button>
             <button
-              onClick={() => setCurrentTab(Tab.Client)}
-              data-active={currentTab === Tab.Client}
-            >
-              <span className="material-icons">devices</span>
-              Client
-            </button>
-            <button
-              onClick={() => setCurrentTab(Tab.Appearance)}
-              data-active={currentTab === Tab.Appearance}
-            >
-              <span className="material-icons">palette</span>
-              Appearance
-            </button>
-            <button
               onClick={() => setCurrentTab(Tab.Startup)}
               data-active={currentTab === Tab.Startup}
             >
@@ -115,10 +100,6 @@ const Settings: React.FC = () => {
           <div className={styles.tab}>
             {currentTab === Tab.General ? (
               <GeneralTab />
-            ) : currentTab === Tab.Client ? (
-              <ClientTab />
-            ) : currentTab === Tab.Appearance ? (
-              <AppearanceTab />
             ) : currentTab === Tab.Startup ? (
               <StartupTab />
             ) : currentTab === Tab.Advanced ? (
@@ -200,55 +181,6 @@ const SelectSetting: React.FC<{
           </option>
         ))}
       </select>
-    </div>
-  )
-}
-
-const SliderSetting: React.FC<{
-  label: string
-  description?: string
-  disabled?: boolean
-  defaultValue?: number
-  value?: number
-  min: number
-  max: number
-  step: number
-  onChange?: (value: number) => void
-  onRelease?: (value: number) => void
-}> = ({
-  label,
-  description,
-  disabled,
-  defaultValue,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  onRelease
-}) => {
-  return (
-    <div className={styles.sliderSetting} data-disabled={disabled}>
-      <div className={styles.text}>
-        <p className={styles.label}>{label}</p>
-        <p className={styles.description}>{description}</p>
-      </div>
-      <input
-        type="range"
-        defaultValue={defaultValue}
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={
-          onChange ? e => onChange(Number(e.target.value)) : undefined
-        }
-        onMouseUp={
-          onRelease
-            ? e => onRelease(Number(e.currentTarget.value))
-            : undefined
-        }
-      />
     </div>
   )
 }
@@ -359,70 +291,98 @@ const GeneralTab: React.FC = () => {
           description="Run the playback setup again to change how playback is handled."
           onClick={() => navigate('/setup?step=3')}
         />
+        <BackupSetting />
+        <div className={styles.buttonSetting}>
+          <div className={styles.text}>
+            <p className={styles.label}>Quit VibeThing</p>
+            <p className={styles.description}>
+              Fully exit instead of staying in the tray. The CarThing loses its
+              connection until you open VibeThing again.
+            </p>
+          </div>
+          <button data-type="danger" onClick={() => window.api.quitApp()}>
+            <span className="material-icons">power_settings_new</span>
+          </button>
+        </div>
       </div>
     )
   )
 }
 
-const ClientTab: React.FC = () => {
-  const [loaded, setLoaded] = useState(false)
-  const [hasCustomImage, setHasCustomImage] = useState(false)
-  const [screensaverStatus, setScreensaverStatus] = useState<{
+const BackupSetting: React.FC = () => {
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<{
+    type: 'success' | 'error'
     message: string
-    status: 'error' | 'success'
   } | null>(null)
-  const settings = useRef<{
-    timeFormat?: string
-    dateFormat?: string
-    autoBrightness?: boolean
-    brightness?: number
-    sleepMethod?: string
-  }>({})
 
-  const [autoBrightness, setAutoBrightness] = useState(false)
-  const [sleepMethod, setSleepMethod] = useState('sleep')
+  async function run(kind: 'export' | 'import') {
+    setBusy(true)
+    setStatus(null)
+    const res =
+      kind === 'export'
+        ? await window.api.exportSettings()
+        : await window.api.importSettings()
+    setBusy(false)
+    if (!res.ok) {
+      if (!res.canceled)
+        setStatus({ type: 'error', message: res.error ?? 'Something went wrong.' })
+      return
+    }
+    setStatus({
+      type: 'success',
+      message:
+        kind === 'export'
+          ? `Saved ${res.count} settings to ${'path' in res ? res.path : 'file'}`
+          : `Imported ${res.count} settings and sent them to your CarThing.`
+    })
+  }
+
+  return (
+    <div className={styles.screensaverSettings}>
+      <div className={styles.header}>
+        <div className={styles.text}>
+          <p className={styles.label}>Back up settings</p>
+          <p className={styles.description}>
+            Screens, buttons, macros, appearance, app shortcuts, weather,
+            calendars and the screensaver image. Your Spotify login isn’t
+            included.
+          </p>
+        </div>
+      </div>
+      <div className={styles.actions}>
+        <button disabled={busy} onClick={() => run('export')} style={{ gap: 6, alignItems: 'center' }}>
+          <span className="material-icons">file_download</span>
+          Export
+        </button>
+        <button disabled={busy} onClick={() => run('import')} style={{ gap: 6, alignItems: 'center' }}>
+          <span className="material-icons">file_upload</span>
+          Import
+        </button>
+      </div>
+      {status && (
+        <div className={styles.status} data-type={status.type}>
+          <span className="material-icons">
+            {status.type === 'success' ? 'check_circle' : 'error'}
+          </span>
+          {status.message}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Device patches (developer mode); the CarThing's everyday settings live in Customize > Device */
+const PatchesSection: React.FC = () => {
   const [patches, setPatches] = useState<
     | { name: string; description: string; installed: boolean }[]
     | false
     | null
   >(null)
-  const [isDev, setIsDev] = useState(false)
-
-  useEffect(() => {
-    async function loadSettings() {
-      settings.current = {
-        timeFormat: ((await window.api.getStorageValue('timeFormat')) ||
-          'HH:mm') as string,
-        dateFormat: ((await window.api.getStorageValue('dateFormat')) ||
-          'ddd, D MMM') as string,
-        autoBrightness:
-          ((await window.api.getStorageValue('autoBrightness')) ??
-            true) === true,
-        brightness: ((await window.api.getStorageValue('brightness')) ??
-          0.5) as number,
-        sleepMethod: ((await window.api.getStorageValue('sleepMethod')) ||
-          'sleep') as string
-      }
-      setAutoBrightness(settings.current.autoBrightness ?? false)
-      setSleepMethod(settings.current.sleepMethod ?? 'sleep')
-
-      const hasImage = await window.api.hasCustomScreensaverImage()
-      setHasCustomImage(hasImage)
-
-      setLoaded(true)
-    }
-
-    window.api.isDevMode().then(setIsDev)
-
-    loadSettings()
-    loadPatches()
-  }, [])
 
   async function loadPatches() {
     setPatches(null)
-    const patches = await window.api.getPatches()
-
-    setPatches(patches)
+    setPatches(await window.api.getPatches())
   }
 
   async function applyPatch(patchName: string) {
@@ -431,182 +391,33 @@ const ClientTab: React.FC = () => {
   }
 
   useEffect(() => {
-    const removeListener = window.api.on('carThingState', async s => {
-      if (patches && s !== 'ready') {
-        setPatches(false)
-      } else if (!patches && s === 'ready') {
-        loadPatches()
-      }
-    })
+    loadPatches()
+  }, [])
 
+  useEffect(() => {
+    const removeListener = window.api.on('carThingState', async s => {
+      if (patches && s !== 'ready') setPatches(false)
+      else if (!patches && s === 'ready') loadPatches()
+    })
     return () => removeListener()
   })
 
+  if (patches === null) return null
+
   return (
-    loaded && (
-      <div className={styles.settingsTab}>
-        <SelectSetting
-          label="Time Format"
-          description="Displayed time format in the titlebar"
-          defaultValue={settings.current.timeFormat}
-          options={[
-            { value: 'HH:mm', label: '24-hour' },
-            { value: 'h:mm A', label: '12-hour' }
-          ]}
-          onChange={value =>
-            window.api.setStorageValue('timeFormat', value as string)
-          }
-        />
-        <SelectSetting
-          label="Date Format"
-          description="Displayed date format in the titlebar"
-          defaultValue={settings.current.dateFormat}
-          options={[
-            { value: 'ddd, D MMM', label: 'Short' },
-            { value: 'dddd, D MMMM', label: 'Long' }
-          ]}
-          onChange={value =>
-            window.api.setStorageValue('dateFormat', value as string)
-          }
-        />
-        <ToggleSetting
-          label="Auto Brightness"
-          description="Automatically adjust the brightness"
-          defaultValue={settings.current.autoBrightness ?? false}
-          onChange={value => {
-            window.api.setStorageValue('autoBrightness', value)
-            setAutoBrightness(value)
-          }}
-        />
-        <SliderSetting
-          label="Brightness"
-          description="Adjust the brightness of the screen"
-          disabled={autoBrightness}
-          defaultValue={settings.current.brightness}
-          min={0}
-          max={1}
-          step={0.05}
-          onRelease={value =>
-            window.api.setStorageValue('brightness', value as number)
-          }
-        />
-        <SelectSetting
-          label="Sleep Method"
-          description="Method used for putting the CarThing to sleep"
-          defaultValue={settings.current.sleepMethod}
-          options={[
-            { value: 'sleep', label: 'Black Screen' },
-            {
-              value: 'screensaver',
-              label: 'Screensaver'
-            }
-          ]}
-          onChange={value => {
-            window.api.setStorageValue('sleepMethod', value as string)
-            setSleepMethod(value as string)
-          }}
-        />
-
-        {sleepMethod === 'screensaver' && (
-          <div className={styles.screensaverSettings}>
-            <div className={styles.header}>
-              <div className={styles.text}>
-                <p className={styles.label}>Custom Screensaver Image</p>
-                <p className={styles.description}>
-                  Upload a custom image to use as your screensaver
-                  background
-                </p>
-              </div>
-              <div className={styles.actions}>
-                <button
-                  onClick={async () => {
-                    setScreensaverStatus(null)
-
-                    const result =
-                      await window.api.uploadScreensaverImage()
-
-                    if (result && result.success) {
-                      setHasCustomImage(true)
-                      setScreensaverStatus({
-                        message: 'Image uploaded successfully!',
-                        status: 'success'
-                      })
-                    } else {
-                      setScreensaverStatus({
-                        message:
-                          result.message || 'Failed to upload image',
-                        status: 'error'
-                      })
-                    }
-                  }}
-                >
-                  <span className="material-icons">upload</span>
-                </button>
-                {hasCustomImage && (
-                  <button
-                    data-type="danger"
-                    onClick={async () => {
-                      setScreensaverStatus(null)
-
-                      const success =
-                        await window.api.removeScreensaverImage()
-
-                      if (success) {
-                        setHasCustomImage(false)
-                        setScreensaverStatus({
-                          message: 'Image removed successfully!',
-                          status: 'success'
-                        })
-                      } else {
-                        setScreensaverStatus({
-                          message: 'Failed to remove image',
-                          status: 'error'
-                        })
-                      }
-                    }}
-                  >
-                    <span className="material-icons">delete</span>
-                  </button>
-                )}
-              </div>
-            </div>
-            {screensaverStatus && (
-              <div
-                className={styles.status}
-                data-type={screensaverStatus.status}
-              >
-                <span className="material-icons">
-                  {screensaverStatus.status === 'error'
-                    ? 'error_outline'
-                    : 'check_circle'}
-                </span>
-                {screensaverStatus.message}
-              </div>
-            )}
-          </div>
-        )}
-        {patches !== null && isDev ? (
-          <div className={styles.patches}>
-            <h2>Patches</h2>
-
-            {patches ? (
-              patches.map(patch => (
-                <Patch
-                  key={patch.name}
-                  {...patch}
-                  onApply={() => applyPatch(patch.name)}
-                />
-              ))
-            ) : (
-              <div className={styles.status}>
-                <span className="material-icons">info_outline</span>
-                Please connect your CarThing to see and install patches!
-              </div>
-            )}
-          </div>
-        ) : null}
-      </div>
-    )
+    <div className={styles.patches}>
+      <h2>Patches</h2>
+      {patches ? (
+        patches.map(patch => (
+          <Patch key={patch.name} {...patch} onApply={() => applyPatch(patch.name)} />
+        ))
+      ) : (
+        <div className={styles.status}>
+          <span className="material-icons">info_outline</span>
+          Please connect your CarThing to see and install patches!
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -638,31 +449,6 @@ const Patch: React.FC<{
           <span className="material-icons">get_app</span>
         </button>
       )}
-    </div>
-  )
-}
-
-const AppearanceTab: React.FC = () => {
-  const [darkMode, setDarkMode] = useState(true)
-
-  useEffect(() => {
-    if (darkMode === false) {
-      setTimeout(() => {
-        setDarkMode(true)
-      }, 100)
-    }
-  }, [darkMode])
-
-  return (
-    <div className={styles.settingsTab}>
-      <ToggleSetting
-        label="Dark mode"
-        description={
-          darkMode ? 'Enable dark mode for the app.' : 'sike u thought'
-        }
-        value={darkMode}
-        onChange={value => setDarkMode(value)}
-      />
     </div>
   )
 }
@@ -842,6 +628,7 @@ const AdvancedTab: React.FC = () => {
             </p>
           )}
         </div>
+        <PatchesSection />
       </div>
     )
   )
@@ -974,16 +761,24 @@ const AboutTab: React.FC = () => {
       <div className={styles.app}>
         <img src={channel === 'nightly' ? iconNightly : icon} alt="" />
         <div className={styles.info}>
-          <h2>GlanceThing{channel === 'nightly' ? ' Nightly' : ''}</h2>
+          <h2>VibeThing{channel === 'nightly' ? ' Nightly' : ''}</h2>
           <p
             onClick={() => setTimesClicked(t => (t += 1))}
             className={styles.version}
           >
             Version {version}
           </p>
+          <p className={styles.version}>Based on GlanceThing by BluDood</p>
         </div>
       </div>
       <h2>Credits</h2>
+      <div className={styles.credit}>
+        <img src={adij13} alt="" />
+        <div className={styles.info}>
+          <span className={styles.creditName}>AdiJ13</span>
+          <p>Creator of VibeThing, based on GlanceThing</p>
+        </div>
+      </div>
       <div className={styles.credit}>
         <img src="https://api.bludood.com/avatar?size=48" alt="" />
         <div className={styles.info}>

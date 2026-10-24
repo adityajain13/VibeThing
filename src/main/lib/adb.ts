@@ -13,13 +13,17 @@ import {
   LogLevel
 } from './utils.js'
 import { serverManager } from './server.js'
-import { getSocketPassword } from './storage.js'
+import { getSocketPassword, setStorageValue } from './storage.js'
 import { getWebAppDir } from './webapp.js'
 
+let verifiedAdb: string | null = null
+
 export async function getAdbExecutable() {
+  if (verifiedAdb) return verifiedAdb
+
   const res = await execAsync('adb version').catch(() => null)
 
-  if (res && platform() !== 'darwin') return 'adb'
+  if (res && platform() !== 'darwin') return (verifiedAdb = 'adb')
 
   const adbInfo = getPlatformADB()
   if (!adbInfo) {
@@ -31,13 +35,27 @@ export async function getAdbExecutable() {
   const platformToolsPath = path.join(userDataPath, 'platform-tools')
   const adbPath = path.join(platformToolsPath, cmd)
 
-  if (fs.existsSync(adbPath)) return `"${adbPath}"`
+  if (fs.existsSync(adbPath)) {
+    // an existing copy may be incomplete (e.g. copied from another app's
+    // folder) — make sure it actually runs before trusting it
+    const works = await execAsync(`"${adbPath}" version`).catch(() => null)
+    if (works) {
+      log(`Using adb at ${adbPath}`, 'adb')
+      return (verifiedAdb = `"${adbPath}"`)
+    }
+    log('Existing adb does not run; downloading a fresh copy', 'adb', LogLevel.WARN)
+    try {
+      fs.rmSync(platformToolsPath, { recursive: true, force: true })
+    } catch (err) {
+      log(`Couldn't remove old adb: ${err}`, 'adb', LogLevel.WARN)
+    }
+  }
 
   log('Downloading ADB...', 'adb')
 
   const downloadPath = path.join(
     app.getPath('temp'),
-    'platform-tools-glancething-temp.zip'
+    'platform-tools-vibething-temp.zip'
   )
 
   if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath)
@@ -78,7 +96,13 @@ export async function getAdbExecutable() {
 
   log('Extracted ADB!', 'adb')
 
-  return `"${adbPath}"`
+  const works = await execAsync(`"${adbPath}" version`).catch(() => null)
+  if (!works) {
+    log('Downloaded adb does not run', 'adb', LogLevel.ERROR)
+    throw new Error('adb_extract_failed')
+  }
+
+  return (verifiedAdb = `"${adbPath}"`)
 }
 
 async function getDevices() {
@@ -103,6 +127,7 @@ async function checkValidDevice(device: string) {
 }
 
 let carThingFound = false
+let lastSeenDevices = ''
 
 export async function findCarThing() {
   log('Finding CarThing...', 'adb', LogLevel.DEBUG)
@@ -119,6 +144,12 @@ export async function findCarThing() {
       }
       return device
     }
+  }
+
+  const seen = devices.join(',') || 'none'
+  if (seen !== lastSeenDevices) {
+    lastSeenDevices = seen
+    log(`No CarThing found. adb sees devices: ${seen}`, 'adb')
   }
 
   if (logLevel === LogLevel.DEBUG)
@@ -274,7 +305,7 @@ export async function installApp(device: string | null) {
   const adb = await getAdbExecutable()
 
   log('Installing app...', 'adb')
-  await execAsync(`${adb} -s ${device} push ${appDir} /tmp/webapp`)
+  await execAsync(`${adb} -s ${device} push "${appDir}" /tmp/webapp`)
   await execAsync(
     `${adb} -s ${device} shell "echo ${WS_PASSWORD} > /tmp/webapp/ws-password"`
   )
@@ -285,6 +316,7 @@ export async function installApp(device: string | null) {
     `${adb} -s ${device} shell "mount --bind /tmp/webapp /usr/share/qt-superbird-app/webapp"`
   )
   await restartChromium(device)
+  setStorageValue('installedClientVersion', app.getVersion())
   log('Installed app!', 'adb')
 }
 
