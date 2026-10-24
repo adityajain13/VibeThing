@@ -19,8 +19,9 @@ asarUnpack:
   - resources/stable/**
 win:
   executableName: VibeThing
+  artifactName: VibeThing-${version}-win-x64.${ext}
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  artifactName: VibeThing-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
@@ -40,7 +41,7 @@ dmg:
 linux:
   target:
     - AppImage
-  maintainer: BluDood
+  maintainer: AdiJ13
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}

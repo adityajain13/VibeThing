@@ -4,8 +4,8 @@
   "version": "0.0.25",
   "description": "VibeThing desktop app (a customised fork of GlanceThing)",
   "main": "./out/main/index.js",
-  "author": "BluDood",
-  "homepage": "https://github.com/BluDood/GlanceThing",
+  "author": "AdiJ13",
+  "homepage": "https://github.com/adityajain13/VibeThing",
   "scripts": {
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
     "format": "prettier --write .",
@@ -14,12 +14,10 @@
     "build": "electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
-    "build:win": "npm run build && electron-builder --win",
+    "build:client": "npm --prefix client ci && npm --prefix client run build",
+    "build:win": "npm run build:client && npm run build && electron-builder --win nsis zip --x64",
     "build:mac": "npm run build && electron-builder --mac",
-    "build:linux": "npm run build && electron-builder --linux",
-    "build:win:nightly": "npm run build && electron-builder --win --config electron-builder.nightly.yml",
-    "build:mac:nightly": "npm run build && electron-builder --mac --config electron-builder.nightly.yml",
-    "build:linux:nightly": "npm run build && electron-builder --linux --config electron-builder.nightly.yml"
+    "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",

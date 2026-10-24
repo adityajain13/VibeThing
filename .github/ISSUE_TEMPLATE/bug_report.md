@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Having an issue with GlanceThing? Report it here!
+about: Having an issue with VibeThing? Report it here!
 title: ''
 labels: ''
 assignees: ''

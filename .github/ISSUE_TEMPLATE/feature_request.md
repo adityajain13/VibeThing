@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a new feature for GlanceThing!
+about: Suggest a new feature for VibeThing!
 title: ''
 labels: ''
 assignees: ''
