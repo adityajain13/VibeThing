@@ -23,8 +23,9 @@ export function migrateFromGlanceThing() {
 
     fs.mkdirSync(target, { recursive: true })
     fs.copyFileSync(path.join(source, 'storage.json'), path.join(target, 'storage.json'))
-    // shortcut icons, screensaver image and the downloaded adb tools
-    for (const dir of ['shortcuts', 'screensaver', 'platform-tools']) {
+    // shortcut icons and screensaver image (adb is downloaded fresh: a copy of
+    // another app's adb can be incomplete or locked by its running server)
+    for (const dir of ['shortcuts', 'screensaver']) {
       const from = path.join(source, dir)
       if (fs.existsSync(from)) fs.cpSync(from, path.join(target, dir), { recursive: true })
     }
