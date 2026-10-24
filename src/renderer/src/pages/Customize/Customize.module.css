@@ -3,7 +3,7 @@
   --surface-2: #1e1e1e;
   --line: #2a2a2a;
   --muted: #9a9a9a;
-  --accent: #0064ff;
+  --accent: var(--brand-hi);
   --ok: #1ed760;
   --danger: #ff5c5c;
 
@@ -366,7 +366,7 @@
 
 .chip :global(.material-icons) {
   font-size: 16px;
-  color: #8fb4ff;
+  color: var(--brand-tint);
 }
 
 .chip[data-used='true'] {
@@ -419,7 +419,7 @@
 }
 
 .screenItem[data-active='true'] {
-  background: #1f2633;
+  background: var(--brand-soft);
 }
 
 .screenNum {
@@ -436,7 +436,7 @@
 }
 
 .screenItem[data-active='true'] .screenNum {
-  background: var(--accent);
+  background: var(--brand);
   color: #fff;
 }
 
@@ -552,8 +552,8 @@
 }
 
 .col[data-target='true'] {
-  border-color: rgba(0, 100, 255, 0.55);
-  background: rgba(0, 100, 255, 0.05);
+  border-color: rgba(73, 113, 94, 0.55);
+  background: rgba(73, 113, 94, 0.05);
 }
 
 .col[data-empty='true'] {
@@ -561,7 +561,7 @@
 }
 
 .col[data-empty='true'][data-target='true'] {
-  border-color: rgba(0, 100, 255, 0.55);
+  border-color: rgba(73, 113, 94, 0.55);
 }
 
 .tile {
@@ -587,7 +587,7 @@
 
 .tile :global(.material-icons) {
   font-size: 22px;
-  color: #8fb4ff;
+  color: var(--brand-tint);
 }
 
 .tileLabel {
@@ -731,7 +731,7 @@
 
 .card h3 :global(.material-icons) {
   font-size: 18px;
-  color: #8fb4ff;
+  color: var(--brand-tint);
 }
 
 .field {
@@ -751,7 +751,7 @@
 
 .field > label b {
   font-weight: 600;
-  color: #8fb4ff;
+  color: var(--brand-tint);
   margin-left: 6px;
 }
 
@@ -873,7 +873,7 @@
 }
 
 .iconSwatch[data-active='true'] {
-  background: #1f2633;
+  background: var(--brand-soft);
   color: #fff;
   box-shadow: inset 0 0 0 1px var(--accent);
 }
@@ -1031,7 +1031,7 @@
 }
 
 .results button:hover {
-  background: #1f2633;
+  background: var(--brand-soft);
 }
 
 .results button :global(.material-icons) {
@@ -1073,7 +1073,7 @@
 }
 
 .groupChips .chip[data-active='true'] {
-  background: #1f2633;
+  background: var(--brand-soft);
   border-color: var(--accent);
 }
 
@@ -1123,7 +1123,7 @@
   width: 40px;
   font-size: 12.5px;
   font-weight: 600;
-  color: #8fb4ff;
+  color: var(--brand-tint);
   text-align: right;
 }
 
@@ -1252,7 +1252,7 @@
 
 .themeChoice[data-active='true'] {
   border-color: var(--accent);
-  background: #1f2633;
+  background: var(--brand-soft);
 }
 
 .themeChoice b {

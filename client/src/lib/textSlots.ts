@@ -26,6 +26,10 @@ export interface TextGroup {
   widget?: string
   slots: TextSlot[]
   options?: { key: string; label: string; default?: boolean }[]
+  /** numeric settings shown as sliders (percent unless unit says otherwise) */
+  sliders?: { key: string; label: string; min: number; max: number; step?: number; default: number }[]
+  /** pick-one settings shown as segmented buttons */
+  choices?: { key: string; label: string; options: { value: string; label: string }[]; default: string }[]
 }
 
 export const TEXT_GROUPS: TextGroup[] = [
@@ -157,6 +161,30 @@ export const TEXT_GROUPS: TextGroup[] = [
     ]
   },
   {
+    id: 'apps',
+    label: 'App shortcuts',
+    icon: 'apps',
+    widget: 'apps',
+    slots: [{ key: 'name', label: 'App names', size: 13, weight: 600 }],
+    options: [{ key: 'showNames', label: 'Names under icons', default: false }],
+    sliders: [
+      { key: 'iconSize', label: 'Icon size', min: 50, max: 180, default: 100 },
+      { key: 'spacing', label: 'Spacing', min: 40, max: 250, default: 100 }
+    ],
+    choices: [
+      {
+        key: 'shape',
+        label: 'Icon shape',
+        default: 'original',
+        options: [
+          { value: 'original', label: 'Original' },
+          { value: 'rounded', label: 'Rounded' },
+          { value: 'circle', label: 'Circle' }
+        ]
+      }
+    ]
+  },
+  {
     id: 'timer',
     label: 'Timer',
     icon: 'timer',
@@ -186,7 +214,7 @@ export const WEIGHTS = [
 ]
 
 export type TextStyles = Record<string, { size?: number; weight?: number }>
-export type WidgetOptions = Record<string, Record<string, boolean>>
+export type WidgetOptions = Record<string, Record<string, boolean | number | string>>
 
 /** CSS variables for a set of text styles (size in %, weight numeric) */
 export function textStyleVars(text: TextStyles | undefined, playerScale = 100) {
@@ -207,4 +235,17 @@ export function optionValue(options: WidgetOptions | undefined, group: string, k
   const v = options?.[group]?.[key]
   if (typeof v === 'boolean') return v
   return TEXT_GROUPS.find(g => g.id === group)?.options?.find(o => o.key === key)?.default ?? true
+}
+
+export function sliderValue(options: WidgetOptions | undefined, group: string, key: string) {
+  const v = options?.[group]?.[key]
+  if (typeof v === 'number') return v
+  return TEXT_GROUPS.find(g => g.id === group)?.sliders?.find(o => o.key === key)?.default ?? 100
+}
+
+export function choiceValue(options: WidgetOptions | undefined, group: string, key: string) {
+  const v = options?.[group]?.[key]
+  const c = TEXT_GROUPS.find(g => g.id === group)?.choices?.find(o => o.key === key)
+  if (typeof v === 'string' && c?.options.some(o => o.value === v)) return v
+  return c?.default ?? ''
 }

@@ -3,7 +3,7 @@
   --height: 24px;
   --slider-padding: 4px;
   --background: #444;
-  --foreground: #0064ff;
+  --foreground: var(--brand);
 
   position: relative;
   display: inline-block;

@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
+
+import { ModalContext } from '@/contexts/ModalContext.js'
 
 import Switch from '@/components/Switch/Switch.js'
 
@@ -9,6 +11,8 @@ import {
   TEXT_GROUPS,
   WEIGHTS,
   optionValue,
+  sliderValue,
+  choiceValue,
   type TextGroup
 } from '../../../../../../client/src/lib/textSlots.js'
 
@@ -107,6 +111,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
   const [groupId, setGroupId] = useState('player')
   const [fsView, setFsView] = useState<'cover' | 'queue'>('cover')
 
+  const { setModalOpen } = useContext(ModalContext)
   const group = GROUPS.find(g => g.id === groupId) ?? TEXT_GROUPS[0]
   const p = { ...DEFAULT_PLAYER, ...(config.player ?? {}) }
   const text = config.text ?? {}
@@ -161,7 +166,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
     update(c => ({ ...c, text: { ...(c.text ?? {}), [key]: { ...(c.text?.[key] ?? {}), ...patch } } }))
   }
 
-  function setOption(key: string, value: boolean) {
+  function setOption(key: string, value: boolean | number | string) {
     update(c => ({
       ...c,
       options: { ...(c.options ?? {}), [group.id]: { ...(c.options?.[group.id] ?? {}), [key]: value } }
@@ -359,6 +364,44 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
                 max={150}
                 onChange={v => setPlayer('controlsScale', v)}
               />
+            </div>
+          )}
+
+          {group.id === 'apps' && (
+            <div className={styles.card}>
+              <h3>Your shortcuts</h3>
+              <p className={styles.help}>Add, remove or change the apps this widget opens on your PC.</p>
+              <button className={styles.primaryBtn} onClick={() => setModalOpen('shortcuts', true)}>
+                <span className="material-icons">apps</span>
+                Manage app shortcuts
+              </button>
+            </div>
+          )}
+
+          {(group.sliders?.length || group.choices?.length) && (
+            <div className={styles.card}>
+              <h3>Style</h3>
+              {group.choices?.map(c => (
+                <div className={styles.field} key={c.key}>
+                  <label>{c.label}</label>
+                  <Segmented<string>
+                    value={choiceValue(config.options, group.id, c.key)}
+                    onChange={v => setOption(c.key, v)}
+                    options={c.options}
+                  />
+                </div>
+              ))}
+              {group.sliders?.map(sl => (
+                <Slider
+                  key={sl.key}
+                  label={sl.label}
+                  value={sliderValue(config.options, group.id, sl.key)}
+                  min={sl.min}
+                  max={sl.max}
+                  step={sl.step ?? 5}
+                  onChange={v => setOption(sl.key, v)}
+                />
+              ))}
             </div>
           )}
 

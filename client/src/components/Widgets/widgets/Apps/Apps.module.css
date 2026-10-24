@@ -18,8 +18,8 @@
   outline: none;
   transition: 200ms ease;
 
-  padding: 10px;
-  margin: 5px;
+  padding: var(--app-pad, 10px);
+  margin: var(--app-gap, 5px);
 
   border-radius: 50%;
 
@@ -31,9 +31,34 @@
 }
 
 .app img {
-  height: 56px;
-  width: 56px;
+  height: var(--app-icon, 56px);
+  width: var(--app-icon, 56px);
   object-fit: cover;
+}
+
+[data-shape='rounded'] .app img {
+  border-radius: 22%;
+}
+
+[data-shape='circle'] .app img {
+  border-radius: 50%;
+}
+
+/* with names the focus ring can't be a circle */
+[data-names='true'] .app {
+  border-radius: 16px;
+}
+
+.name {
+  margin-top: 6px;
+  max-width: calc(var(--app-icon, 56px) + 24px);
+  font-size: calc(13px * var(--t-apps-s, 1) * var(--t-apps-name-s, 1));
+  font-weight: var(--t-apps-name-w, 600);
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 @keyframes appear {

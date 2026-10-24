@@ -114,7 +114,7 @@ export interface ClientConfig {
   /** Text styles keyed "group" (whole-widget size %) or "group.slot" */
   text: Record<string, { size?: number; weight?: number }>
   /** Show/hide options per widget group, e.g. options.calendar.showLocation */
-  options: Record<string, Record<string, boolean>>
+  options: Record<string, Record<string, boolean | number | string>>
   /** dark = grey panels; black = pure black with hairlines; black-flat = no hairlines */
   theme: 'dark' | 'black' | 'black-flat'
   behaviour: Behaviour

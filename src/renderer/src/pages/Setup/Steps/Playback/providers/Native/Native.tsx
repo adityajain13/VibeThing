@@ -20,7 +20,7 @@ const Native: React.FC<NativeProps> = ({ onStepComplete }) => {
           href="https://github.com/spmn/vlc-win10smtc"
           target="_blank"
           rel="noreferrer"
-          style={{ color: '#6ea8ff' }}
+          style={{ color: 'var(--brand-hi)' }}
         >
           vlc-win10smtc
         </a>{' '}
