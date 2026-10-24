@@ -4,7 +4,7 @@
   --line: #2a2a2a;
   --muted: #9a9a9a;
   --accent: var(--brand-hi);
-  --ok: #1ed760;
+  --ok: var(--brand-tint);
   --danger: #ff5c5c;
 
   position: fixed;
@@ -60,7 +60,9 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
-  font-size: 12.5px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
 }
 
@@ -736,9 +738,10 @@
 
 .field {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 8px 16px;
   min-height: 32px;
 }
 
@@ -799,15 +802,22 @@
 
 .segmented {
   display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   padding: 2px;
   border-radius: 7px;
   background: var(--surface-2);
   border: 1px solid var(--line);
 }
 
+.field > .segmented {
+  margin-left: auto;
+}
+
 .segmented button {
   all: unset;
-  padding: 5px 12px;
+  padding: 5px 10px;
+  white-space: nowrap;
   border-radius: 5px;
   font-size: 13px;
   color: var(--muted);
@@ -1378,7 +1388,7 @@
 
 /* leave room for the window's titlebar buttons (top right) */
 .customize[data-embedded='true'] .header {
-  padding-right: 190px;
+  padding-right: 110px;
   min-height: 52px;
 }
 

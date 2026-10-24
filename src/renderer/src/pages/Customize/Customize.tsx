@@ -120,6 +120,26 @@ const Customize: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
     setMacros(prev => (prev ? fn(prev) : prev))
   }
 
+  // embedded, the window's own buttons sit over the header: leave just their width free
+  const [titlebarGap, setTitlebarGap] = useState(0)
+  useEffect(() => {
+    if (!embedded) return
+    const measure = () => {
+      const first = document.querySelector<HTMLElement>('[data-titlebar-actions] > *')
+      setTitlebarGap(first ? window.innerWidth - first.getBoundingClientRect().left : 0)
+    }
+    measure()
+    // the developer button appears later, once settings load
+    const bar = document.querySelector('[data-titlebar-actions]')
+    const obs = new MutationObserver(measure)
+    if (bar) obs.observe(bar, { childList: true })
+    window.addEventListener('resize', measure)
+    return () => {
+      obs.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [embedded])
+
   function onClickBackground(e: React.MouseEvent<HTMLDivElement>) {
     if (!embedded && e.target === e.currentTarget) setModalOpen('customize', false)
   }
@@ -132,7 +152,10 @@ const Customize: React.FC<{ embedded?: boolean }> = ({ embedded = false }) => {
       onClick={onClickBackground}
     >
       <div className={styles.box}>
-        <header className={styles.header}>
+        <header
+          className={styles.header}
+          style={embedded && titlebarGap ? { paddingRight: titlebarGap + 6 } : undefined}
+        >
           <h2>Customize CarThing</h2>
           <div className={styles.saveState} data-state={saveState}>
             {saveState === 'saving' ? (

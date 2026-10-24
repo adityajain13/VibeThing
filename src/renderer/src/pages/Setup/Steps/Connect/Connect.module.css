@@ -55,7 +55,7 @@
 
 .state span {
   font-size: 4rem;
-  color: #1ed760;
+  color: var(--brand-tint);
 }
 
 .state p {

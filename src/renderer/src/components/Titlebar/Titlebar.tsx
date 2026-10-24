@@ -32,7 +32,7 @@ const Titlebar: React.FC = () => {
 
   return (
     <div className={styles.titlebar}>
-      <div className={styles.actions}>
+      <div className={styles.actions} data-titlebar-actions>
         {buttons.map(({ icon, action }) => (
           <button key={icon} onClick={action}>
             <span className="material-icons">{icon}</span>

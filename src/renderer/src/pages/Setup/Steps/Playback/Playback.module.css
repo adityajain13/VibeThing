@@ -60,7 +60,7 @@
 
 .state span {
   font-size: 4rem;
-  color: #1ed760;
+  color: var(--brand-tint);
 }
 
 .state span[data-type='error'] {
