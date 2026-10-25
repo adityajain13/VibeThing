@@ -1,5 +1,6 @@
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 import { log, LogLevel } from '../utils.js'
+import { browserBridge, BrowserMedia } from '../browserBridge.js'
 import { windowsHelper } from '../windowsHelper.js'
 import {
   getVlcSettings,
@@ -345,6 +346,7 @@ class NativeHandler extends BasePlaybackHandler {
 
   async setup(): Promise<void> {
     log('Setting up', 'Native')
+    browserBridge.on('change', this.onBrowserChange)
 
     this.vlcTimer = setInterval(() => {
       this.pollVlc().catch(err => log(`VLC poll failed: ${err}`, 'Native', LogLevel.WARN))
@@ -362,7 +364,7 @@ class NativeHandler extends BasePlaybackHandler {
           this.receivedAt = Date.now()
           // VLC is showing; Windows updates would make the card flicker
           if (this.vlcActive) return
-          this.emit('playback', this.applyTimeline(data))
+          this.emit('playback', this.applyBrowser(this.applyTimeline(data)))
         }
       }
     ) as NowPlaying
@@ -380,6 +382,7 @@ class NativeHandler extends BasePlaybackHandler {
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Native')
+    browserBridge.off('change', this.onBrowserChange)
 
     if (this.timelineTimer) clearInterval(this.timelineTimer)
     this.timelineTimer = null
@@ -410,7 +413,33 @@ class NativeHandler extends BasePlaybackHandler {
       const total = data.track.duration.total
       data.track.duration.current = total > 0 ? Math.min(total, advanced) : advanced
     }
-    return this.applyTimeline(data)
+    return this.applyBrowser(this.applyTimeline(data))
+  }
+
+  /** YouTube in the browser: like/unlike through the VibeThing extension */
+  private applyBrowser(data: PlaybackData) {
+    if (!data) return data
+    const m = browserBridge.matching(data.track.name)
+    if (m && m.liked !== null) {
+      data.track.liked = m.liked
+      if (!data.supportedActions.includes('like')) data.supportedActions.push('like')
+    }
+    return data
+  }
+
+  private onBrowserChange = (m: BrowserMedia | null) => {
+    if (this.vlcActive || !this.current) return
+    if (m && !browserBridge.matching(this.current.trackName)) return
+    this.getPlayback()
+      .then(data => data && this.emit('playback', data))
+      .catch(() => {})
+  }
+
+  async setLiked(liked: boolean): Promise<boolean> {
+    if (this.vlcActive || !browserBridge.matching(this.current?.trackName)) return false
+    const ok = await browserBridge.setLiked(liked)
+    if (!ok) log('The browser didn\'t confirm the like', 'Native', LogLevel.WARN)
+    return ok
   }
 
   async play(): Promise<void> {

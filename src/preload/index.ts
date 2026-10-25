@@ -61,6 +61,8 @@ enum IPCHandler {
   GetVlcSettings = 'getVlcSettings',
   SaveVlcSettings = 'saveVlcSettings',
   TestVlc = 'testVlc',
+  GetBrowserBridge = 'getBrowserBridge',
+  OpenExtensionFolder = 'openExtensionFolder',
   QuitApp = 'quitApp'
 }
 
@@ -155,7 +157,9 @@ const api = {
   getVlcSettings: () => ipcRenderer.invoke(IPCHandler.GetVlcSettings),
   saveVlcSettings: (s: unknown) => ipcRenderer.invoke(IPCHandler.SaveVlcSettings, s),
   testVlc: (s: unknown) => ipcRenderer.invoke(IPCHandler.TestVlc, s),
-  quitApp: () => ipcRenderer.invoke(IPCHandler.QuitApp)
+  quitApp: () => ipcRenderer.invoke(IPCHandler.QuitApp),
+  getBrowserBridge: () => ipcRenderer.invoke(IPCHandler.GetBrowserBridge),
+  openExtensionFolder: () => ipcRenderer.invoke(IPCHandler.OpenExtensionFolder)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

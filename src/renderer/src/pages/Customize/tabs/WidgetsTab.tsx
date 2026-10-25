@@ -14,6 +14,66 @@ interface CalendarSource {
 
 const CAL_COLORS = ['#4f8cff', '#ff7a59', '#2ec27e', '#c061cb', '#f5c211']
 
+/** YouTube likes go through a small browser extension that ships with VibeThing */
+const BrowserCard: React.FC = () => {
+  const [state, setState] = useState<{ connected: boolean; folder: string | null } | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    const load = () => window.api.getBrowserBridge().then(s => alive && setState(s))
+    load()
+    const id = setInterval(load, 3000)
+    return () => {
+      alive = false
+      clearInterval(id)
+    }
+  }, [])
+
+  if (!state) return null
+
+  return (
+    <section className={styles.card}>
+      <h3>
+        <span className="material-icons">thumb_up</span>YouTube likes
+      </h3>
+      <p className={styles.help}>
+        Lets the like button on the CarThing like and unlike what’s playing on YouTube and
+        YouTube Music in Chrome or Edge. It needs the VibeThing browser extension.
+      </p>
+      {state.connected ? (
+        <p className={styles.okNote}>
+          <span className="material-icons">check_circle</span>
+          Extension connected
+        </p>
+      ) : (
+        <>
+          <ol className={styles.steps}>
+            <li className={styles.helpStep}>
+              Open <b>chrome://extensions</b> (or <b>edge://extensions</b>) and turn on{' '}
+              <b>Developer mode</b>.
+            </li>
+            <li className={styles.helpStep}>
+              Click <b>Load unpacked</b> and choose the extension folder.
+            </li>
+            <li className={styles.helpStep}>Reload any YouTube tabs that are already open.</li>
+          </ol>
+          <div className={styles.inline}>
+            <button
+              className={styles.primaryBtn}
+              disabled={!state.folder}
+              onClick={() => window.api.openExtensionFolder()}
+            >
+              <span className="material-icons">folder_open</span>
+              Show extension folder
+            </button>
+            <span className={styles.muted}>Not connected yet</span>
+          </div>
+        </>
+      )}
+    </section>
+  )
+}
+
 const VlcCard: React.FC = () => {
   const [enabled, setEnabled] = useState(false)
   const [port, setPort] = useState('8080')
@@ -288,6 +348,7 @@ const WidgetsTab: React.FC = () => {
       </section>
 
       <VlcCard />
+      <BrowserCard />
 
       <section className={styles.card}>
         <h3>
