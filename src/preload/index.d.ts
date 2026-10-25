@@ -92,8 +92,6 @@ declare global {
       saveVlcSettings: (s: { enabled: boolean; port: number; password?: string }) => Promise<boolean>
       testVlc: (s: { port: number; password?: string }) => Promise<'ok' | 'auth' | 'offline'>
       quitApp: () => Promise<void>
-      getBrowserBridge: () => Promise<{ connected: boolean; port: number; folder: string | null }>
-      openExtensionFolder: () => Promise<boolean>
       importSettings: () => Promise<
         { ok: true; count: number } | { ok: false; canceled?: boolean; error?: string }
       >

@@ -1332,13 +1332,6 @@
   color-scheme: dark;
 }
 
-.steps {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin: 2px 0 4px;
-}
-
 .helpStep {
   font-size: 13px;
   color: var(--muted);

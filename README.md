@@ -15,7 +15,6 @@ It's a customised fork of [GlanceThing](https://github.com/BluDood/GlanceThing) 
 - Screens you design yourself: up to 3 columns of widgets per screen, as many screens as you like. Swipe between them or map a button to each.
 - **Now playing** for Spotify, YouTube, VLC and anything else Windows can see. Video lengths come from Windows, and wide video thumbnails stay wide instead of being squashed square.
 - **Fullscreen player** with synced lyrics and what's up next.
-- **Like button** for Spotify, plus YouTube and YouTube Music in Chrome or Edge with the included browser extension.
 - **Calendar** (any ICS link), **Weather**, **Clock**, **PC stats** (CPU, memory, GPU, network), **Volume mixer** per app, **App shortcuts**, **Macros** and a **Timer**.
 - Timer you set by turning the dial. It starts in 1 second steps and speeds up to 5 s, 10 s, 30 s and 1 min the longer you turn, and you get a Windows notification when it's done.
 - Dark, black and flat-black themes, with an accent colour picked from the album art or chosen by you.
@@ -48,10 +47,6 @@ VibeThing is built and tested for **Windows**.
 3. Once your CarThing is set up, VibeThing opens straight to **Customize**.
 
 You don't need GlanceThing installed. If you already use it, close it first, because only one app can talk to the CarThing at a time.
-
-### YouTube likes
-
-To like and unlike YouTube and YouTube Music videos from the CarThing, add the VibeThing browser extension to Chrome or Edge. Go to **Customize → Widget data → YouTube likes** and click **Show extension folder**. Then open `chrome://extensions` (or `edge://extensions`), turn on **Developer mode**, click **Load unpacked** and choose that folder.
 
 ### VLC
 

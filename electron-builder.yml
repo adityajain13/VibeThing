@@ -14,10 +14,6 @@ extraResources:
     to: client
     filter:
       - '**/*'
-  - from: extension
-    to: extension
-    filter:
-      - '**/*'
 asarUnpack:
   - resources/common/**
   - resources/stable/**

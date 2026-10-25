@@ -84,7 +84,6 @@ import { migrateFromGlanceThing } from './lib/migrate.js'
 import { getLocalClientDir } from './lib/webapp.js'
 import { exportSettings, importSettings } from './lib/backup.js'
 import { getVlcSettings, testVlc } from './lib/playback/vlc.js'
-import { browserBridge, BRIDGE_PORT } from './lib/browserBridge.js'
 import { geocode } from './lib/widgets/weather.js'
 import { listMixerTargets } from './lib/widgets/mixer.js'
 import { runMacroDefinition } from './lib/macros.js'
@@ -159,15 +158,6 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'gtpreview', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
-/** The unpacked browser extension shipped next to the app */
-function extensionFolder(): string | null {
-  const candidates = [
-    app.isPackaged ? path.join(process.resourcesPath, 'extension') : null,
-    path.join(process.cwd(), 'extension')
-  ]
-  return candidates.find(d => d && fs.existsSync(path.join(d, 'manifest.json'))) ?? null
-}
-
 app.on('ready', async () => {
   log('Welcome!', 'VibeThing')
 
@@ -199,9 +189,6 @@ app.on('ready', async () => {
     if (adbPath === 'adb') log('Using system adb', 'adb')
     else log(`Using downloaded ADB from path: ${adbPath}`, 'adb')
   }
-
-  // lets the VibeThing browser extension report YouTube likes
-  browserBridge.start()
 
   // never let a server problem stop the window and CarThing checks
   if (getStorageValue('setupComplete') === true)
@@ -310,8 +297,6 @@ enum IPCHandler {
   GetVlcSettings = 'getVlcSettings',
   SaveVlcSettings = 'saveVlcSettings',
   TestVlc = 'testVlc',
-  GetBrowserBridge = 'getBrowserBridge',
-  OpenExtensionFolder = 'openExtensionFolder',
   QuitApp = 'quitApp'
 }
 
@@ -624,17 +609,6 @@ async function setupIpcHandlers() {
   )
 
   ipcMain.handle(IPCHandler.QuitApp, () => app.quit())
-
-  ipcMain.handle(IPCHandler.GetBrowserBridge, () => ({
-    connected: browserBridge.connected,
-    port: BRIDGE_PORT,
-    folder: extensionFolder()
-  }))
-  ipcMain.handle(IPCHandler.OpenExtensionFolder, async () => {
-    const dir = extensionFolder()
-    if (!dir) return false
-    return (await shell.openPath(dir)) === ''
-  })
 
   // lets the Customize preview read live data from our own server (read-only)
   ipcMain.handle(IPCHandler.GetPreviewConnection, () => {
