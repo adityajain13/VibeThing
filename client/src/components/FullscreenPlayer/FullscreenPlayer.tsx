@@ -66,8 +66,9 @@ const FullscreenPlayer: React.FC = () => {
     background: useOption('fullscreen', 'showBackground')
   }
   const layout = useChoice('fullscreen', 'layout')
+  const timesBelow = useChoice('fullscreen', 'times') === 'below'
   const time = useServerTime()
-  const { image, playerData, actions, supports } = useContext(MediaContext)
+  const { image, playerData, actions, supports, lyrics, queue } = useContext(MediaContext)
 
   // keep the art's own shape (video thumbnails are 16:9) inside a box that fits the layout
   // on top, the cover gets whatever height the text leaves (text sizes are adjustable)
@@ -96,7 +97,19 @@ const FullscreenPlayer: React.FC = () => {
     if (Math.abs(next - aboveHeight) > 2) setAboveHeight(next)
   })
   const shown = fullscreen !== null
-  const view = fullscreen ?? 'cover'
+
+  // only offer views that have something in them
+  const hasLyrics = !!(lyrics?.synced?.length || lyrics?.plain)
+  const hasQueue = supports('queue') && (queue === null || queue.length > 0)
+  const views = VIEWS.filter(v => (v.id === 'lyrics' ? hasLyrics : v.id === 'queue' ? hasQueue : true))
+  const requested = fullscreen ?? 'cover'
+  const view = views.some(v => v.id === requested) ? requested : 'cover'
+  const trackKey = playerData?.track.id ?? playerData?.track.name
+  useEffect(() => {
+    // know whether there's anything up next before showing its tab
+    if (shown && supports('queue')) actions.requestQueue()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, trackKey])
 
   const latest = useRef({ shown, actions, view })
   latest.current = { shown, actions, view }
@@ -154,7 +167,7 @@ const FullscreenPlayer: React.FC = () => {
         </button>
         {showTime && time && <span className={`${styles.clock} tnum`}>{time.time}</span>}
         <div className={styles.tabs}>
-          {VIEWS.map(v => (
+          {views.length > 1 && views.map(v => (
             <button
               key={v.id}
               className={styles.tab}
@@ -198,7 +211,7 @@ const FullscreenPlayer: React.FC = () => {
                 {(show.progress || (show.controls && !hasExtraButtons)) && (
                   <div className={styles.progressRow}>
                     {show.controls && !hasExtraButtons && playButton}
-                    {show.progress && <Progress className={styles.progress} showTimes={show.times} />}
+                    {show.progress && <Progress className={styles.progress} showTimes={show.times} timesBelow={timesBelow} />}
                   </div>
                 )}
                 {show.controls && hasExtraButtons && (

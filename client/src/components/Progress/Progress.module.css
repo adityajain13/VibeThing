@@ -4,7 +4,8 @@
   width: 100%;
 }
 
-.progress span {
+.progress span,
+.timesRow span {
   /* set by whichever player hosts the bar, so each can be styled separately */
   font-size: calc(14px * var(--p-time-m, 1) * var(--p-time-s, 1));
   font-weight: var(--p-time-w, 600);
@@ -34,4 +35,23 @@
   border-radius: 3px;
   background: var(--accent);
   transition: width 250ms linear;
+}
+
+/* times under the bar */
+.stacked {
+  width: 100%;
+}
+
+.stacked .hit {
+  padding: 10px 0 4px;
+}
+
+.timesRow {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -2px;
+}
+
+.timesRow span:last-child {
+  text-align: right;
 }

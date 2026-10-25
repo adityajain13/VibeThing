@@ -96,6 +96,15 @@ export const TEXT_GROUPS: TextGroup[] = [
           { value: 'beside', label: 'Cover beside' },
           { value: 'above', label: 'Cover on top' }
         ]
+      },
+      {
+        key: 'times',
+        label: 'Elapsed / total time',
+        default: 'beside',
+        options: [
+          { value: 'beside', label: 'Beside the bar' },
+          { value: 'below', label: 'Below the bar' }
+        ]
       }
     ]
   },

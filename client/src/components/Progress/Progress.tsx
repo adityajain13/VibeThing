@@ -8,11 +8,13 @@ import styles from './Progress.module.css'
 
 interface ProgressProps {
   showTimes?: boolean
+  /** put the times under the bar so the bar can use the full width */
+  timesBelow?: boolean
   className?: string
 }
 
 /** Track progress; tap anywhere on the bar to seek */
-const Progress: React.FC<ProgressProps> = ({ showTimes = true, className }) => {
+const Progress: React.FC<ProgressProps> = ({ showTimes = true, timesBelow = false, className }) => {
   const { playerData, supports, actions } = useContext(MediaContext)
   const position = usePosition()
   const barRef = useRef<HTMLDivElement>(null)
@@ -31,20 +33,32 @@ const Progress: React.FC<ProgressProps> = ({ showTimes = true, className }) => {
     actions.seek(f * total)
   }
 
-  return (
-    <div className={`${styles.progress} ${className ?? ''}`} data-noswipe>
-      {showTimes && <span className="tnum">{formatTime(position)}</span>}
-      <div
-        className={styles.hit}
-        ref={barRef}
-        onPointerDown={onPointerDown}
-        data-seekable={seekable}
-      >
-        <div className={styles.bar}>
-          <div className={styles.fill} style={{ width: `${pct}%` }} />
+  const elapsed = <span className="tnum">{formatTime(position)}</span>
+  const length = <span className="tnum">{known ? formatTime(total) : '--:--'}</span>
+  const bar = (
+    <div className={styles.hit} ref={barRef} onPointerDown={onPointerDown} data-seekable={seekable}>
+      <div className={styles.bar}>
+        <div className={styles.fill} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+
+  if (showTimes && timesBelow)
+    return (
+      <div className={`${styles.stacked} ${className ?? ''}`} data-noswipe>
+        {bar}
+        <div className={styles.timesRow}>
+          {elapsed}
+          {length}
         </div>
       </div>
-      {showTimes && <span className="tnum">{known ? formatTime(total) : '--:--'}</span>}
+    )
+
+  return (
+    <div className={`${styles.progress} ${className ?? ''}`} data-noswipe>
+      {showTimes && elapsed}
+      {bar}
+      {showTimes && length}
     </div>
   )
 }
