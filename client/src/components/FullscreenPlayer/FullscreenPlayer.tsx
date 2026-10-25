@@ -1,5 +1,6 @@
-import { useOption } from '@/lib/useOption.ts'
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useChoice, useOption } from '@/lib/useOption.ts'
+import { useServerTime } from '@/lib/useServerTime.ts'
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import { FullscreenView, UIContext } from '@/contexts/UIContext.tsx'
@@ -53,20 +54,37 @@ const Queue: React.FC = () => {
 const FullscreenPlayer: React.FC = () => {
   const { fullscreen, setFullscreen } = useContext(UIContext)
   const showAlbum = useOption('fullscreen', 'showAlbum')
+  const showTime = useOption('fullscreen', 'showTime')
+  const layout = useChoice('fullscreen', 'layout')
+  const time = useServerTime()
   const { image, playerData, actions, supports } = useContext(MediaContext)
 
-  // keep the art's own shape (video thumbnails are 16:9) inside a 420x300 box
-  const [coverSize, setCoverSize] = useState({ width: 300, height: 300 })
+  // keep the art's own shape (video thumbnails are 16:9) inside a box that fits the layout
+  // on top, the cover gets whatever height the text leaves (text sizes are adjustable)
+  const nowRef = useRef<HTMLDivElement>(null)
+  const infoRef = useRef<HTMLDivElement>(null)
+  const [aboveHeight, setAboveHeight] = useState(160)
+  const box = layout === 'above' ? { w: 360, h: aboveHeight } : { w: 420, h: 300 }
+  const [aspect, setAspect] = useState(1)
   useEffect(() => {
-    if (!image) return setCoverSize({ width: 300, height: 300 })
+    if (!image) return setAspect(1)
     const img = new Image()
-    img.onload = () => {
-      const ar = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1
-      const width = Math.round(Math.min(420, 300 * ar))
-      setCoverSize({ width, height: Math.round(width / ar) })
-    }
+    img.onload = () =>
+      setAspect(img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1)
     img.src = image
   }, [image])
+  const coverWidth = Math.round(Math.min(box.w, box.h * aspect))
+  const coverSize = { width: coverWidth, height: Math.round(coverWidth / aspect) }
+
+  useLayoutEffect(() => {
+    if (layout !== 'above' || !nowRef.current || !infoRef.current) return
+    const now = nowRef.current
+    const cs = getComputedStyle(now)
+    const free =
+      now.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - infoRef.current.offsetHeight - 30
+    const next = Math.max(80, Math.min(240, Math.floor(free)))
+    if (Math.abs(next - aboveHeight) > 2) setAboveHeight(next)
+  })
   const shown = fullscreen !== null
   const view = fullscreen ?? 'cover'
 
@@ -110,6 +128,7 @@ const FullscreenPlayer: React.FC = () => {
         <button className={styles.close} onClick={() => setFullscreen(null)} aria-label="Close">
           <span className="material-icons">keyboard_arrow_down</span>
         </button>
+        {showTime && time && <span className={`${styles.clock} tnum`}>{time.time}</span>}
         <div className={styles.tabs}>
           {VIEWS.map(v => (
             <button
@@ -143,11 +162,11 @@ const FullscreenPlayer: React.FC = () => {
       ) : (
         <div className={styles.body}>
           {view === 'cover' && (
-            <div className={styles.now}>
+            <div className={styles.now} data-layout={layout} ref={nowRef}>
               <div className={styles.cover} style={coverSize}>
                 {image ? <img src={image} alt="" /> : <span className="material-icons">music_note</span>}
               </div>
-              <div className={styles.info}>
+              <div className={styles.info} ref={infoRef}>
                 <p className={styles.title}>{playerData.track.name}</p>
                 <p className={styles.artist}>{playerData.track.artists.join(', ')}</p>
                 {showAlbum && <p className={styles.album}>{playerData.track.album}</p>}

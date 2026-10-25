@@ -72,9 +72,24 @@ export const TEXT_GROUPS: TextGroup[] = [
       { key: 'queueTitle', label: 'Up next: track', size: 19, weight: 700 },
       { key: 'queueArtist', label: 'Up next: artist', size: 15, weight: 500 },
       { key: 'miniTitle', label: 'Mini player: track', size: 17, weight: 700 },
-      { key: 'miniArtist', label: 'Mini player: artist', size: 14, weight: 500 }
+      { key: 'miniArtist', label: 'Mini player: artist', size: 14, weight: 500 },
+      { key: 'clock', label: 'Time', size: 20, weight: 700 }
     ],
-    options: [{ key: 'showAlbum', label: 'Album name' }]
+    options: [
+      { key: 'showAlbum', label: 'Album name' },
+      { key: 'showTime', label: 'Time in the corner', default: false }
+    ],
+    choices: [
+      {
+        key: 'layout',
+        label: 'Layout',
+        default: 'beside',
+        options: [
+          { value: 'beside', label: 'Cover beside' },
+          { value: 'above', label: 'Cover on top' }
+        ]
+      }
+    ]
   },
   {
     id: 'lyrics',

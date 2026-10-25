@@ -67,9 +67,25 @@
 }
 
 .tabs {
-  flex: 1;
+  /* centred on the screen whatever sits either side */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   justify-content: center;
+}
+
+.top > .like,
+.top > .spacer {
+  margin-left: auto;
+}
+
+.clock {
+  margin-left: 6px;
+  font-size: calc(20px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-clock-s, 1));
+  font-weight: var(--t-fullscreen-clock-w, 700);
+  color: var(--text);
+  opacity: 0.9;
 }
 
 .tab {
@@ -131,6 +147,34 @@
 .info {
   flex: 1;
   min-width: 0;
+}
+
+/* cover on top, everything centred underneath */
+.now[data-layout='above'] {
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 60px 18px;
+}
+
+.now[data-layout='above'] .cover {
+  margin: 0 0 14px;
+}
+
+.now[data-layout='above'] .info {
+  flex: none;
+  width: 100%;
+  max-width: 600px;
+  text-align: center;
+}
+
+.now[data-layout='above'] .title {
+  -webkit-line-clamp: 1;
+}
+
+.now[data-layout='above'] .controls {
+  max-width: 440px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .title {
