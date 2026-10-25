@@ -90,6 +90,7 @@
 
 .tab {
   all: unset;
+  white-space: nowrap;
   font-size: calc(17px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-tabs-s, 1));
   font-weight: var(--t-fullscreen-tabs-w, 700);
   color: var(--muted);
@@ -172,9 +173,11 @@
 }
 
 .now[data-layout='above'] .controls {
-  max-width: 440px;
-  margin-left: auto;
-  margin-right: auto;
+  justify-content: center;
+}
+
+.now[data-layout='above'] .controls > button {
+  margin: 0 14px;
 }
 
 .title {
@@ -207,8 +210,35 @@
   text-overflow: ellipsis;
 }
 
-.progress {
+.progressRow {
+  display: flex;
+  align-items: center;
   margin-top: 16px;
+}
+
+.progress {
+  flex: 1;
+  min-width: 0;
+}
+
+/* the play button when it's the only control: smaller, left of the bar */
+.progressRow .play {
+  all: unset;
+  flex-shrink: 0;
+  margin-right: 16px;
+  cursor: pointer;
+}
+
+.progressRow .play span {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--ink);
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .controls {

@@ -76,7 +76,15 @@ export const TEXT_GROUPS: TextGroup[] = [
       { key: 'clock', label: 'Time', size: 20, weight: 700 }
     ],
     options: [
+      { key: 'showArtist', label: 'Artist' },
       { key: 'showAlbum', label: 'Album name' },
+      { key: 'showProgress', label: 'Progress bar' },
+      { key: 'showTimes', label: 'Elapsed / total time' },
+      { key: 'showControls', label: 'Playback buttons' },
+      { key: 'showSkip', label: 'Previous / next' },
+      { key: 'showShuffleRepeat', label: 'Shuffle and repeat' },
+      { key: 'showLike', label: 'Like button' },
+      { key: 'showBackground', label: 'Blurred cover background' },
       { key: 'showTime', label: 'Time in the corner', default: false }
     ],
     choices: [
