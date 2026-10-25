@@ -110,6 +110,9 @@ const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Ignore stale server echoes for a moment after an optimistic change
   const lockUntil = useRef(0)
+  // covers can arrive a moment after the song (browsers load them late), so retry a few times
+  const hasImage = useRef(false)
+  const imageTries = useRef({ count: 0, at: 0 })
 
   function setPlayerData(d: PlaybackData | null) {
     playerDataRef.current = d
@@ -134,6 +137,7 @@ const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
       if (type !== 'playback') return
 
       if (action === 'image') {
+        hasImage.current = !!data
         setImage(data ? `data:image/png;base64,${data}` : null)
         return
       }
@@ -165,6 +169,7 @@ const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (trackKey(next) !== prevKey) {
         setLyrics(null)
+        imageTries.current = { count: 1, at: Date.now() }
         send({ type: 'playback', action: 'image' })
         send({ type: 'lyrics' })
       }
@@ -176,6 +181,20 @@ const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
     return () => socket.removeEventListener('message', listener)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, socket])
+
+  // no cover yet for this song: ask again a few times in case it was still loading
+  const currentKey = trackKey(playerData)
+  const canImage = !!playerData?.supportedActions.includes('image')
+  useEffect(() => {
+    if (image || !canImage || !currentKey) return
+    const id = setInterval(() => {
+      if (hasImage.current || imageTries.current.count >= 6) return clearInterval(id)
+      imageTries.current = { count: imageTries.current.count + 1, at: Date.now() }
+      send({ type: 'playback', action: 'image' })
+    }, 3000)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [image, canImage, currentKey])
 
   // Accent colour follows the album art unless a fixed colour is configured
   useEffect(() => {

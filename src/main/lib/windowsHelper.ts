@@ -292,8 +292,7 @@ function Invoke-GtpAwait($op, $type, $ms) {
   if (-not $task.Wait($ms)) { return $null }
   return $task.Result
 }
-function Get-GtpTimeline {
-  try {
+function Get-GtpSession {
     if ($script:gtpMedia -eq $null) {
       Add-Type -AssemblyName System.Runtime.WindowsRuntime
       $script:gtpAsTask = ([System.WindowsRuntimeSystemExtensions].GetMethods() | Where-Object {
@@ -302,6 +301,12 @@ function Get-GtpTimeline {
       $null = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType = WindowsRuntime]
       $script:gtpMedia = Invoke-GtpAwait ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]) 4000
     }
+    if ($script:gtpMedia -eq $null) { return $null }
+    return $script:gtpMedia.GetCurrentSession()
+}
+function Get-GtpTimeline {
+  try {
+    if ($script:gtpMedia -eq $null) { $null = Get-GtpSession }
     if ($script:gtpMedia -eq $null) { return '{"ok":false,"error":"no session manager"}' }
     $s = $script:gtpMedia.GetCurrentSession()
     if ($s -eq $null) { return '{"ok":true,"session":false}' }
@@ -318,10 +323,32 @@ function Get-GtpTimeline {
       start = [double]$tl.StartTime.TotalMilliseconds
       end = [double]$tl.EndTime.TotalMilliseconds
       position = [double]$tl.Position.TotalMilliseconds
+      thumb = [bool]($props -and $props.Thumbnail -ne $null)
       updated = [double]$tl.LastUpdatedTime.ToUnixTimeMilliseconds()
       now = [double][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
     }
     return ($o | ConvertTo-Json -Compress)
+  } catch {
+    return '{"ok":false,"error":' + (ConvertTo-Json -Compress ([string]$_.Exception.Message)) + '}'
+  }
+}
+
+function Get-GtpThumbnail {
+  try {
+    $s = Get-GtpSession
+    if ($s -eq $null) { return '{"ok":true,"data":null}' }
+    $props = Invoke-GtpAwait ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties]) 2000
+    if ($props -eq $null -or $props.Thumbnail -eq $null) { return '{"ok":true,"data":null}' }
+    $null = [Windows.Storage.Streams.IRandomAccessStreamWithContentType, Windows.Storage.Streams, ContentType = WindowsRuntime]
+    $stream = Invoke-GtpAwait ($props.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType]) 3000
+    if ($stream -eq $null) { return '{"ok":false,"error":"thumbnail timed out"}' }
+    try {
+      $net = [System.IO.WindowsRuntimeStreamExtensions]::AsStreamForRead($stream)
+      $ms = New-Object System.IO.MemoryStream
+      $net.CopyTo($ms)
+      $o = [ordered]@{ ok = $true; title = [string]$props.Title; data = [Convert]::ToBase64String($ms.ToArray()) }
+      return ($o | ConvertTo-Json -Compress)
+    } finally { $stream.Dispose() }
   } catch {
     return '{"ok":false,"error":' + (ConvertTo-Json -Compress ([string]$_.Exception.Message)) + '}'
   }
@@ -336,7 +363,7 @@ while ($true) {
   if ($sep -lt 0) { continue }
   $id = $line.Substring(0, $sep)
   $cmd = $line.Substring($sep + 1)
-  if ($cmd -eq 'timeline') { $res = Get-GtpTimeline } else { $res = [GlanceThingPlus.Api]::Handle($cmd) }
+  if ($cmd -eq 'timeline') { $res = Get-GtpTimeline } elseif ($cmd -eq 'thumbnail') { $res = Get-GtpThumbnail } else { $res = [GlanceThingPlus.Api]::Handle($cmd) }
   [Console]::Out.WriteLine($id + '|' + $res)
   [Console]::Out.Flush()
 }

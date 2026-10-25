@@ -187,7 +187,8 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
 
   if (canChangeVolume) playbackData.supportedActions.push('volume')
   if (canSkip) playbackData.supportedActions.push('next', 'previous')
-  if (data.thumbnail) playbackData.supportedActions.push('image')
+  // without addon art, Windows' own media controls may still have it (see getImage)
+  if (data.thumbnail || windowsHelper.supported) playbackData.supportedActions.push('image')
   if (canFastForward && trackDuration) playbackData.supportedActions.push('seek')
 
   return playbackData
@@ -207,6 +208,7 @@ interface WindowsTimeline {
   position?: number
   updated?: number
   now?: number
+  thumb?: boolean
 }
 
 const norm = (t: string | undefined) => (t ?? '').trim().toLowerCase()
@@ -316,7 +318,8 @@ class NativeHandler extends BasePlaybackHandler {
       this.loggedFor = cur.trackName
       log(
         `Timeline for "${cur.trackName}" (${t.app}): Windows ${Math.round(position / 1000)}s / ${Math.round(duration / 1000)}s, ` +
-          `addon ${Math.round((cur.trackProgress ?? 0) / 10000 / 1000)}s / ${Math.round((cur.trackDuration ?? 0) / 10000 / 1000)}s`,
+          `addon ${Math.round((cur.trackProgress ?? 0) / 10000 / 1000)}s / ${Math.round((cur.trackDuration ?? 0) / 10000 / 1000)}s; ` +
+          `cover from addon ${cur.thumbnail ? 'yes' : 'no'}, from Windows ${t.thumb ? 'yes' : 'no'}`,
         'Native'
       )
     }
@@ -472,23 +475,39 @@ class NativeHandler extends BasePlaybackHandler {
 
   async getImage(): Promise<Buffer | null> {
     if (this.vlcActive) return vlcArt(this.vlc)
+    const fromAddon = await this.addonImage().catch(err => {
+      log(`Couldn't load cover: ${err}`, 'Native', LogLevel.WARN)
+      return null
+    })
+    return fromAddon ?? (await this.windowsImage())
+  }
+
+  private async addonImage(): Promise<Buffer | null> {
     const thumb = this.current?.thumbnail
     if (!thumb) return null
+    if (thumb.startsWith('data:image'))
+      return Buffer.from(thumb.replace(/^data:image\/\w+;base64,/, ''), 'base64')
+    if (thumb.startsWith('https://') || thumb.startsWith('http://')) {
+      const res = await axios.get(thumb, { responseType: 'arraybuffer', timeout: 5000 })
+      return Buffer.from(res.data)
+    }
+    return null
+  }
 
-    if (thumb.startsWith('data:image')) {
-      const base64 = thumb.replace(/^data:image\/\w+;base64,/, '')
-      const buffer = Buffer.from(base64, 'base64')
-      return buffer
-    } else if (
-      thumb.startsWith('https://') ||
-      thumb.startsWith('http://')
-    ) {
-      const res = await axios.get(thumb, {
-        responseType: 'arraybuffer'
-      })
-
-      return res.data
-    } else return null
+  /** Browsers (Plex, YouTube…) often hand their artwork only to Windows' media controls */
+  private async windowsImage(): Promise<Buffer | null> {
+    const cur = this.current
+    if (!cur || !windowsHelper.supported) return null
+    const t = await windowsHelper.call<{ ok: boolean; title?: string; data?: string | null; error?: string }>(
+      'thumbnail'
+    )
+    if (!t?.ok) {
+      if (t?.error) log(`Windows cover unavailable: ${t.error}`, 'Native', LogLevel.WARN)
+      return null
+    }
+    // only use it if Windows is showing the same thing as the addon
+    if (!t.data || norm(t.title) !== norm(cur.trackName)) return null
+    return Buffer.from(t.data, 'base64')
   }
 }
 
