@@ -76,6 +76,10 @@ export class PreviewSocket {
   private real: WebSocket | null = null
   private realReady = false
   private sample = true
+  // sample Windows notifications, only while the fullscreen player asks for them
+  private notifTimeout: ReturnType<typeof setTimeout> | null = null
+  private notifInterval: ReturnType<typeof setInterval> | null = null
+  private notifId = 0
 
   constructor() {
     window.addEventListener('message', e => {
@@ -249,8 +253,35 @@ export class PreviewSocket {
     this.emit({ type: 'playback', data: this.playback() })
   }
 
+  private stopNotifications() {
+    if (this.notifTimeout) clearTimeout(this.notifTimeout)
+    if (this.notifInterval) clearInterval(this.notifInterval)
+    this.notifTimeout = null
+    this.notifInterval = null
+  }
+
+  private sendNotification() {
+    this.emit({
+      type: 'notifications',
+      data: {
+        id: ++this.notifId,
+        title: 'Nivi',
+        body: 'Are you still coming for dinner at 7?',
+        source: 'messages.google.com',
+        at: Date.now()
+      }
+    })
+  }
+
   private topics(topics: string[]) {
     const now = Date.now()
+    this.stopNotifications()
+    if (topics.includes('notifications')) {
+      this.notifTimeout = setTimeout(() => {
+        this.sendNotification()
+        this.notifInterval = setInterval(() => this.sendNotification(), 12000)
+      }, 1500)
+    }
     const samples: Record<string, unknown> = {
       weather: {
         location: 'Preview City',

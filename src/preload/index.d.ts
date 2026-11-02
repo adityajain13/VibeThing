@@ -91,6 +91,7 @@ declare global {
       getVlcSettings: () => Promise<{ enabled: boolean; port: number; hasPassword: boolean }>
       saveVlcSettings: (s: { enabled: boolean; port: number; password?: string }) => Promise<boolean>
       testVlc: (s: { port: number; password?: string }) => Promise<'ok' | 'auth' | 'offline'>
+      testNotifications: () => Promise<{ ok: boolean; error?: string }>
       quitApp: () => Promise<void>
       importSettings: () => Promise<
         { ok: true; count: number } | { ok: false; canceled?: boolean; error?: string }

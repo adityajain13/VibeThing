@@ -75,6 +75,62 @@
   justify-content: center;
 }
 
+/* a Windows notification, shown in place of the view tabs for a few seconds */
+.notif {
+  all: unset;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  max-width: 520px;
+  box-sizing: border-box;
+  padding: 8px 16px 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  animation: notif-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.notif > :global(.material-icons) {
+  font-size: 20px;
+  color: var(--accent);
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.notifText {
+  display: block;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notifTitle {
+  font-size: calc(16px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-notifTitle-s, 1));
+  font-weight: var(--t-fullscreen-notifTitle-w, 800);
+  margin-right: 8px;
+}
+
+.notifBody {
+  font-size: calc(15px * var(--t-fullscreen-s, 1) * var(--t-fullscreen-notifBody-s, 1));
+  font-weight: var(--t-fullscreen-notifBody-w, 500);
+  color: var(--muted);
+}
+
+@keyframes notif-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 .top > .like,
 .top > .spacer {
   margin-left: auto;

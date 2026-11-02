@@ -1,15 +1,24 @@
-import { useChoice, useOption } from '@/lib/useOption.ts'
+import { useChoice, useOption, useSlider } from '@/lib/useOption.ts'
 import { useServerTime } from '@/lib/useServerTime.ts'
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import { FullscreenView, UIContext } from '@/contexts/UIContext.tsx'
+import { useTopic, useWantTopic } from '@/contexts/TopicsContext.tsx'
 
 import Progress from '@/components/Progress/Progress.tsx'
 import LyricsView from '@/components/LyricsView/LyricsView.tsx'
 import VolumeOverlay from '@/components/VolumeOverlay/VolumeOverlay.tsx'
 
 import styles from './FullscreenPlayer.module.css'
+
+interface WindowsNotification {
+  id: number
+  title: string
+  body: string
+  source: string
+  at: number
+}
 
 const VIEWS: { id: FullscreenView; label: string }[] = [
   { id: 'cover', label: 'Now playing' },
@@ -55,6 +64,8 @@ const FullscreenPlayer: React.FC = () => {
   const { fullscreen, setFullscreen } = useContext(UIContext)
   const showAlbum = useOption('fullscreen', 'showAlbum')
   const showTime = useOption('fullscreen', 'showTime')
+  const showNotifications = useOption('fullscreen', 'showNotifications')
+  const notifSeconds = useSlider('fullscreen', 'notifSeconds')
   const show = {
     artist: useOption('fullscreen', 'showArtist'),
     progress: useOption('fullscreen', 'showProgress'),
@@ -97,6 +108,24 @@ const FullscreenPlayer: React.FC = () => {
     if (Math.abs(next - aboveHeight) > 2) setAboveHeight(next)
   })
   const shown = fullscreen !== null
+
+  // Windows notifications for the header banner; only streamed while the player is open
+  useWantTopic('notifications', showNotifications && shown)
+  const latestNotif = useTopic<WindowsNotification | null>('notifications')
+  const [notif, setNotif] = useState<WindowsNotification | null>(null)
+  const shownNotifId = useRef<number | null>(null)
+  const notifTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
+  useEffect(() => {
+    if (!showNotifications || !latestNotif) return
+    // only what arrives while the player is open is shown, never a replay of an old one
+    if (latestNotif.id === shownNotifId.current) return
+    shownNotifId.current = latestNotif.id
+    if (!shown) return
+    setNotif(latestNotif)
+    clearTimeout(notifTimer.current)
+    notifTimer.current = setTimeout(() => setNotif(null), notifSeconds * 1000)
+  }, [latestNotif, showNotifications, shown, notifSeconds])
+  useEffect(() => () => clearTimeout(notifTimer.current), [])
 
   // only offer views that have something in them
   const hasLyrics = !!(lyrics?.synced?.length || lyrics?.plain)
@@ -166,18 +195,28 @@ const FullscreenPlayer: React.FC = () => {
           <span className="material-icons">keyboard_arrow_down</span>
         </button>
         {showTime && time && <span className={`${styles.clock} tnum`}>{time.time}</span>}
-        <div className={styles.tabs}>
-          {views.length > 1 && views.map(v => (
-            <button
-              key={v.id}
-              className={styles.tab}
-              data-active={v.id === view}
-              onClick={() => setFullscreen(v.id)}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
+        {notif ? (
+          <button className={styles.notif} onClick={() => setNotif(null)}>
+            <span className="material-icons">chat</span>
+            <span className={styles.notifText}>
+              <b className={styles.notifTitle}>{notif.title}</b>
+              <span className={styles.notifBody}>{notif.body}</span>
+            </span>
+          </button>
+        ) : (
+          <div className={styles.tabs}>
+            {views.length > 1 && views.map(v => (
+              <button
+                key={v.id}
+                className={styles.tab}
+                data-active={v.id === view}
+                onClick={() => setFullscreen(v.id)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        )}
         {show.like && supports('like') && playerData ? (
           <button
             className={styles.like}

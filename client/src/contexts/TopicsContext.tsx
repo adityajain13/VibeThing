@@ -1,18 +1,21 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 import { SocketContext } from './SocketContext.tsx'
 
-const TOPICS = ['weather', 'system', 'calendar', 'mixer'] as const
+const TOPICS = ['weather', 'system', 'calendar', 'mixer', 'notifications'] as const
 export type Topic = (typeof TOPICS)[number]
 
 interface TopicsContextProps {
   data: Partial<Record<Topic, unknown>>
   setWanted: (topics: Topic[]) => void
+  /** Keep a topic running while the returned function has not been called */
+  want: (topic: Topic) => () => void
 }
 
 const TopicsContext = createContext<TopicsContextProps>({
   data: {},
-  setWanted: () => {}
+  setWanted: () => {},
+  want: () => () => {}
 })
 
 /**
@@ -23,6 +26,8 @@ const TopicsContextProvider = ({ children }: { children: React.ReactNode }) => {
   const { ready, socket } = useContext(SocketContext)
   const [data, setData] = useState<Partial<Record<Topic, unknown>>>({})
   const [wanted, setWantedState] = useState<Topic[]>([])
+  // topics wanted by components regardless of the screen, with a count of who wants them
+  const [extra, setExtra] = useState<Partial<Record<Topic, number>>>({})
 
   useEffect(() => {
     if (!ready || !socket) return
@@ -35,7 +40,25 @@ const TopicsContextProvider = ({ children }: { children: React.ReactNode }) => {
     return () => socket.removeEventListener('message', listener)
   }, [ready, socket])
 
-  const wantedKey = [...wanted].sort().join(',')
+  const want = useCallback((topic: Topic) => {
+    setExtra(e => ({ ...e, [topic]: (e[topic] ?? 0) + 1 }))
+    let released = false
+    return () => {
+      if (released) return
+      released = true
+      setExtra(e => {
+        const count = (e[topic] ?? 0) - 1
+        const next = { ...e }
+        if (count > 0) next[topic] = count
+        else delete next[topic]
+        return next
+      })
+    }
+  }, [])
+
+  const allWanted = new Set<Topic>(wanted)
+  for (const topic of TOPICS) if ((extra[topic] ?? 0) > 0) allWanted.add(topic)
+  const wantedKey = [...allWanted].sort().join(',')
 
   useEffect(() => {
     if (!ready || !socket) return
@@ -43,7 +66,7 @@ const TopicsContextProvider = ({ children }: { children: React.ReactNode }) => {
   }, [ready, socket, wantedKey])
 
   return (
-    <TopicsContext.Provider value={{ data, setWanted: setWantedState }}>
+    <TopicsContext.Provider value={{ data, setWanted: setWantedState, want }}>
       {children}
     </TopicsContext.Provider>
   )
@@ -51,6 +74,15 @@ const TopicsContextProvider = ({ children }: { children: React.ReactNode }) => {
 
 export function useTopic<T>(topic: Topic): T | undefined {
   return useContext(TopicsContext).data[topic] as T | undefined
+}
+
+/** Subscribe to a topic from any component while enabled, whatever the screen */
+export function useWantTopic(topic: Topic, enabled: boolean) {
+  const { want } = useContext(TopicsContext)
+  useEffect(() => {
+    if (!enabled) return
+    return want(topic)
+  }, [want, topic, enabled])
 }
 
 export { TopicsContext, TopicsContextProvider, TOPICS }

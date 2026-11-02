@@ -113,6 +113,65 @@ const VlcCard: React.FC = () => {
   )
 }
 
+const NotificationsCard: React.FC = () => {
+  const [filter, setFilter] = useState('')
+  const [loaded, setLoaded] = useState(false)
+  const [status, setStatus] = useState<{ ok: boolean; error?: string } | 'testing' | null>(null)
+
+  useEffect(() => {
+    window.api.getStorageValue('notificationFilter').then(v => {
+      setFilter(v === null || v === undefined ? 'messages.google.com' : String(v))
+      setLoaded(true)
+    })
+  }, [])
+
+  async function test() {
+    setStatus('testing')
+    const res = await window.api.testNotifications()
+    setStatus(res)
+  }
+
+  if (!loaded) return null
+
+  return (
+    <section className={styles.card}>
+      <h3>
+        <span className="material-icons">notifications</span>Notifications
+      </h3>
+      <p className={styles.help}>
+        Shows new Windows notifications at the top of the fullscreen player on the CarThing. Turn it on under
+        Appearance → Fullscreen player. For Google Messages, keep messages.google.com open in Firefox with
+        notifications allowed.
+      </p>
+      <div className={styles.field}>
+        <label>Only show notifications containing</label>
+      </div>
+      <div className={styles.calRow}>
+        <input
+          type="text"
+          className={styles.grow}
+          value={filter}
+          placeholder="Leave empty for all notifications"
+          onChange={e => setFilter(e.target.value)}
+          onBlur={() => window.api.setStorageValue('notificationFilter', filter.trim())}
+        />
+        <button className={styles.primaryBtn} onClick={test} disabled={status === 'testing'}>
+          <span className="material-icons">notifications_active</span>
+          {status === 'testing' ? 'Testing…' : 'Test'}
+        </button>
+      </div>
+      {status && status !== 'testing' && (
+        <p className={status.ok ? styles.okNote : styles.warn}>
+          <span className="material-icons">{status.ok ? 'check_circle' : 'error'}</span>
+          {status.ok
+            ? 'VibeThing can read your Windows notifications'
+            : `Couldn’t read notifications: ${status.error}`}
+        </p>
+      )}
+    </section>
+  )
+}
+
 const WidgetsTab: React.FC = () => {
   const [location, setLocation] = useState<WeatherLocation | null>(null)
   const [units, setUnits] = useState<'metric' | 'imperial'>('metric')
@@ -288,6 +347,8 @@ const WidgetsTab: React.FC = () => {
       </section>
 
       <VlcCard />
+
+      <NotificationsCard />
 
       <section className={styles.card}>
         <h3>

@@ -56,11 +56,12 @@ const Slider: React.FC<{
   min: number
   max: number
   step?: number
+  unit?: string
   onChange: (v: number) => void
-}> = ({ label, value, min, max, step = 5, onChange }) => (
+}> = ({ label, value, min, max, step = 5, unit = '%', onChange }) => (
   <div className={styles.field}>
     <label>
-      {label} <b>{value}%</b>
+      {label} <b>{value}{unit}</b>
     </label>
     <input
       type="range"
@@ -379,6 +380,7 @@ const AppearanceTab: React.FC<Props> = ({ config, macros, update }) => {
                   min={sl.min}
                   max={sl.max}
                   step={sl.step ?? 5}
+                  unit={sl.unit}
                   onChange={v => setOption(sl.key, v)}
                 />
               ))}

@@ -61,6 +61,7 @@ enum IPCHandler {
   GetVlcSettings = 'getVlcSettings',
   SaveVlcSettings = 'saveVlcSettings',
   TestVlc = 'testVlc',
+  TestNotifications = 'testNotifications',
   QuitApp = 'quitApp'
 }
 
@@ -155,6 +156,7 @@ const api = {
   getVlcSettings: () => ipcRenderer.invoke(IPCHandler.GetVlcSettings),
   saveVlcSettings: (s: unknown) => ipcRenderer.invoke(IPCHandler.SaveVlcSettings, s),
   testVlc: (s: unknown) => ipcRenderer.invoke(IPCHandler.TestVlc, s),
+  testNotifications: () => ipcRenderer.invoke(IPCHandler.TestNotifications),
   quitApp: () => ipcRenderer.invoke(IPCHandler.QuitApp)
 }
 

@@ -84,6 +84,7 @@ import { migrateFromGlanceThing } from './lib/migrate.js'
 import { getLocalClientDir } from './lib/webapp.js'
 import { exportSettings, importSettings } from './lib/backup.js'
 import { getVlcSettings, testVlc } from './lib/playback/vlc.js'
+import { testNotificationAccess } from './lib/widgets/notifications.js'
 import { geocode } from './lib/widgets/weather.js'
 import { listMixerTargets } from './lib/widgets/mixer.js'
 import { runMacroDefinition } from './lib/macros.js'
@@ -297,6 +298,7 @@ enum IPCHandler {
   GetVlcSettings = 'getVlcSettings',
   SaveVlcSettings = 'saveVlcSettings',
   TestVlc = 'testVlc',
+  TestNotifications = 'testNotifications',
   QuitApp = 'quitApp'
 }
 
@@ -607,6 +609,8 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.TestVlc, (_e, s: { port: number; password?: string }) =>
     testVlc(Number(s.port) || 8080, typeof s.password === 'string' ? s.password : ((getStorageValue('vlcPassword', true) as string) ?? ''))
   )
+
+  ipcMain.handle(IPCHandler.TestNotifications, () => testNotificationAccess())
 
   ipcMain.handle(IPCHandler.QuitApp, () => app.quit())
 

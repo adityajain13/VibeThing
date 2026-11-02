@@ -24,7 +24,8 @@ const EXPORTED_KEYS = [
   'brightness',
   'installAutomatically',
   'launchOnStartup',
-  'launchMinimized'
+  'launchMinimized',
+  'notificationFilter'
 ]
 
 const FORMAT = 'glancething-custom-settings'

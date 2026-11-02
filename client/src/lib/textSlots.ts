@@ -27,7 +27,7 @@ export interface TextGroup {
   slots: TextSlot[]
   options?: { key: string; label: string; default?: boolean }[]
   /** numeric settings shown as sliders (percent unless unit says otherwise) */
-  sliders?: { key: string; label: string; min: number; max: number; step?: number; default: number }[]
+  sliders?: { key: string; label: string; min: number; max: number; step?: number; default: number; unit?: string }[]
   /** pick-one settings shown as segmented buttons */
   choices?: { key: string; label: string; options: { value: string; label: string }[]; default: string }[]
 }
@@ -73,7 +73,9 @@ export const TEXT_GROUPS: TextGroup[] = [
       { key: 'queueArtist', label: 'Up next: artist', size: 15, weight: 500 },
       { key: 'miniTitle', label: 'Mini player: track', size: 17, weight: 700 },
       { key: 'miniArtist', label: 'Mini player: artist', size: 14, weight: 500 },
-      { key: 'clock', label: 'Time', size: 20, weight: 700 }
+      { key: 'clock', label: 'Time', size: 20, weight: 700 },
+      { key: 'notifTitle', label: 'Notification: sender', size: 16, weight: 800 },
+      { key: 'notifBody', label: 'Notification: message', size: 15, weight: 500 }
     ],
     options: [
       { key: 'showArtist', label: 'Artist' },
@@ -85,7 +87,11 @@ export const TEXT_GROUPS: TextGroup[] = [
       { key: 'showShuffleRepeat', label: 'Shuffle and repeat' },
       { key: 'showLike', label: 'Like button' },
       { key: 'showBackground', label: 'Blurred cover background' },
-      { key: 'showTime', label: 'Time in the corner', default: false }
+      { key: 'showTime', label: 'Time in the corner', default: false },
+      { key: 'showNotifications', label: 'Notifications in the header', default: false }
+    ],
+    sliders: [
+      { key: 'notifSeconds', label: 'Show notifications for (seconds)', min: 3, max: 30, step: 1, default: 8, unit: 's' }
     ],
     choices: [
       {
