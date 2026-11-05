@@ -475,11 +475,14 @@ class NativeHandler extends BasePlaybackHandler {
 
   async getImage(): Promise<Buffer | null> {
     if (this.vlcActive) return vlcArt(this.vlc)
-    const fromAddon = await this.addonImage().catch(err => {
+    // Windows' cover is checked against the current title, so it can't be the previous
+    // video's; the addon's can lag behind on some sites (Floatplane), so it's the fallback
+    const fromWindows = await this.windowsImage().catch(() => null)
+    if (fromWindows) return fromWindows
+    return this.addonImage().catch(err => {
       log(`Couldn't load cover: ${err}`, 'Native', LogLevel.WARN)
       return null
     })
-    return fromAddon ?? (await this.windowsImage())
   }
 
   private async addonImage(): Promise<Buffer | null> {

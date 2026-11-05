@@ -196,6 +196,15 @@ const MediaContextProvider = ({ children }: { children: React.ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [image, canImage, currentKey])
 
+  // browsers often swap the title before the artwork, so the first cover after a
+  // change can still be the previous video's: check again shortly after
+  useEffect(() => {
+    if (!canImage || !currentKey) return
+    const ids = [2500, 7000].map(ms => setTimeout(() => send({ type: 'playback', action: 'image' }), ms))
+    return () => ids.forEach(clearTimeout)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canImage, currentKey])
+
   // Accent colour follows the album art unless a fixed colour is configured
   useEffect(() => {
     let cancelled = false
