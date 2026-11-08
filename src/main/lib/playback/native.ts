@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 import { log, LogLevel } from '../utils.js'
 import { windowsHelper } from '../windowsHelper.js'
@@ -316,6 +317,7 @@ class NativeHandler extends BasePlaybackHandler {
 
     if (this.loggedFor !== cur.trackName) {
       this.loggedFor = cur.trackName
+      this.sourceApp = t.app ?? null
       log(
         `Timeline for "${cur.trackName}" (${t.app}): Windows ${Math.round(position / 1000)}s / ${Math.round(duration / 1000)}s, ` +
           `addon ${Math.round((cur.trackProgress ?? 0) / 10000 / 1000)}s / ${Math.round((cur.trackDuration ?? 0) / 10000 / 1000)}s; ` +
@@ -475,14 +477,31 @@ class NativeHandler extends BasePlaybackHandler {
 
   async getImage(): Promise<Buffer | null> {
     if (this.vlcActive) return vlcArt(this.vlc)
-    // Windows' cover is checked against the current title, so it can't be the previous
-    // video's; the addon's can lag behind on some sites (Floatplane), so it's the fallback
-    const fromWindows = await this.windowsImage().catch(() => null)
-    if (fromWindows) return fromWindows
-    return this.addonImage().catch(err => {
-      log(`Couldn't load cover: ${err}`, 'Native', LogLevel.WARN)
-      return null
-    })
+    const image =
+      (await this.windowsImage().catch(() => null)) ??
+      (await this.addonImage().catch(err => {
+        log(`Couldn't load cover: ${err}`, 'Native', LogLevel.WARN)
+        return null
+      }))
+    return this.dropStaleCover(image)
+  }
+
+  /**
+   * Some sites (Floatplane) never give the browser a cover, so the browser keeps
+   * showing the previous video's. In a browser, a new title with the exact same
+   * cover as the last title means it's stale: show no cover rather than the wrong one.
+   */
+  private sourceApp: string | null = null
+  private lastCover: { title: string; hash: string } | null = null
+  private dropStaleCover(image: Buffer | null): Buffer | null {
+    const title = this.current?.trackName ?? ''
+    if (!image) return null
+    const hash = crypto.createHash('sha1').update(image).digest('hex')
+    const prev = this.lastCover
+    const inBrowser = /firefox|chrome|msedge|opera|brave|vivaldi|^308046B0AF4A39CB$/i.test(this.sourceApp ?? '')
+    if (inBrowser && prev && prev.title !== title && prev.hash === hash) return null
+    if (!prev || prev.title !== title || prev.hash !== hash) this.lastCover = { title, hash }
+    return image
   }
 
   private async addonImage(): Promise<Buffer | null> {

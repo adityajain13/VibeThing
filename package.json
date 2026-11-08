@@ -1,7 +1,7 @@
 {
   "name": "vibething",
   "productName": "VibeThing",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "description": "VibeThing desktop app (a customised fork of GlanceThing)",
   "main": "./out/main/index.js",
   "author": "AdiJ13",
