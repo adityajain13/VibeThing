@@ -345,3 +345,18 @@ export async function forwardSocketServer(device: string | null) {
 
   log('Forwarded socket server!', 'adb', LogLevel.DEBUG)
 }
+
+/** Uptime and free memory on the CarThing, for working out why it restarted */
+export async function getCarThingHealth(device: string) {
+  const adb = await getAdbExecutable()
+  const res = await execAsync(
+    `${adb} -s ${device} shell "cat /proc/uptime; grep -E 'MemTotal|MemAvailable' /proc/meminfo"`
+  ).catch(() => '')
+  const uptime = Number(res.match(/^\s*([\d.]+)/)?.[1])
+  const kb = (key: string) => Number(res.match(new RegExp(`${key}:\\s+(\\d+)`))?.[1])
+  return {
+    uptimeSec: Number.isFinite(uptime) ? Math.round(uptime) : null,
+    memAvailableMb: kb('MemAvailable') ? Math.round(kb('MemAvailable') / 1024) : null,
+    memTotalMb: kb('MemTotal') ? Math.round(kb('MemTotal') / 1024) : null
+  }
+}

@@ -342,13 +342,28 @@ function Get-GtpThumbnail {
     $null = [Windows.Storage.Streams.IRandomAccessStreamWithContentType, Windows.Storage.Streams, ContentType = WindowsRuntime]
     $stream = Invoke-GtpAwait ($props.Thumbnail.OpenReadAsync()) ([Windows.Storage.Streams.IRandomAccessStreamWithContentType]) 3000
     if ($stream -eq $null) { return '{"ok":false,"error":"thumbnail timed out"}' }
+    $bytes = $null
+    # WinRT streams have no Dispose() in PowerShell, so close the .NET wrapper instead
     try {
       $net = [System.IO.WindowsRuntimeStreamExtensions]::AsStreamForRead($stream)
       $ms = New-Object System.IO.MemoryStream
       $net.CopyTo($ms)
-      $o = [ordered]@{ ok = $true; title = [string]$props.Title; data = [Convert]::ToBase64String($ms.ToArray()) }
-      return ($o | ConvertTo-Json -Compress)
-    } finally { $stream.Dispose() }
+      $bytes = $ms.ToArray()
+      try { $net.Dispose() } catch {}
+    } catch {
+      # fallback: read it with a DataReader
+      $null = [Windows.Storage.Streams.DataReader, Windows.Storage.Streams, ContentType = WindowsRuntime]
+      $size = [uint32]$stream.Size
+      $reader = New-Object Windows.Storage.Streams.DataReader ($stream.GetInputStreamAt(0))
+      $loaded = Invoke-GtpAwait ($reader.LoadAsync($size)) ([uint32]) 3000
+      if ($loaded -gt 0) {
+        $bytes = New-Object byte[] $loaded
+        $reader.ReadBytes($bytes)
+      }
+    }
+    if ($bytes -eq $null -or $bytes.Length -eq 0) { return '{"ok":true,"data":null}' }
+    $o = [ordered]@{ ok = $true; title = [string]$props.Title; data = [Convert]::ToBase64String($bytes) }
+    return ($o | ConvertTo-Json -Compress)
   } catch {
     return '{"ok":false,"error":' + (ConvertTo-Json -Compress ([string]$_.Exception.Message)) + '}'
   }

@@ -47,6 +47,7 @@ import {
   rebootCarThing,
   installApp,
   checkInstalledApp,
+  getCarThingHealth,
   forwardSocketServer,
   getAdbExecutable,
   getBrightness,
@@ -362,6 +363,18 @@ async function setupIpcHandlers() {
     return setStorageValue(key, value)
   })
 
+  // every 10 minutes, note the CarThing's free memory so a restart can be explained
+  let lastHealthLog = 0
+  async function logHealth(device: string, why: string) {
+    lastHealthLog = Date.now()
+    const h = await getCarThingHealth(device)
+    const up = h.uptimeSec === null ? 'unknown' : `${Math.floor(h.uptimeSec / 60)} min`
+    log(
+      `${why}: CarThing up ${up}, ${h.memAvailableMb ?? '?'} MB of ${h.memTotalMb ?? '?'} MB memory free`,
+      'CarThingState'
+    )
+  }
+
   async function carThingStateUpdate() {
     const found = await findCarThing().catch(err => {
       log(
@@ -399,7 +412,10 @@ async function setupIpcHandlers() {
           if ((await getBrightness(found)) !== brightness)
             setBrightnessSmooth(found, brightness)
         }
+        if (Date.now() - lastHealthLog > 10 * 60 * 1000) await logHealth(found, 'Health')
       } else {
+        // the client lives in the CarThing's /tmp, so it's only missing after the CarThing restarts
+        await logHealth(found, 'Client missing, the CarThing has restarted')
         const willAutoInstall = getStorageValue('installAutomatically')
         if (willAutoInstall) {
           mainWindow?.webContents.send('carThingState', 'installing')
