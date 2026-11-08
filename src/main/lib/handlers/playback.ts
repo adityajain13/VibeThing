@@ -1,9 +1,29 @@
+import { nativeImage } from 'electron'
+
 import { RepeatMode } from '../../types/Playback.js'
 import {
   HandlerAction,
   HandlerFunction
 } from '../../types/WebSocketHandler.js'
 import { playbackManager } from '../playback/playback.js'
+
+/** The CarThing's screen is 800x480; decoding bigger covers just wastes its memory */
+function shrinkCover(buf: Buffer): Buffer {
+  try {
+    const img = nativeImage.createFromBuffer(buf)
+    if (img.isEmpty()) return buf
+    const { width, height } = img.getSize()
+    const MAX = 480
+    const scaled =
+      width > MAX || height > MAX
+        ? img.resize(width >= height ? { width: MAX, quality: 'good' } : { height: MAX, quality: 'good' })
+        : img
+    const jpeg = scaled.toJPEG(85)
+    return jpeg.length > 0 && jpeg.length < buf.length ? jpeg : buf
+  } catch {
+    return buf
+  }
+}
 
 export const name = 'playback'
 
@@ -36,7 +56,7 @@ export const actions: HandlerAction[] = [
         JSON.stringify({
           type: 'playback',
           action: 'image',
-          data: image ? image.toString('base64') : null
+          data: image ? shrinkCover(image).toString('base64') : null
         })
       )
     }

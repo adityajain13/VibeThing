@@ -54,7 +54,8 @@ import {
   setBrightnessSmooth,
   getAutoBrightness,
   setAutoBrightness,
-  restore
+  restore,
+  restartChromium
 } from './lib/adb.js'
 import {
   getShortcuts,
@@ -373,6 +374,36 @@ async function setupIpcHandlers() {
       `${why}: CarThing up ${up}, ${h.memAvailableMb ?? '?'} MB of ${h.memTotalMb ?? '?'} MB memory free`,
       'CarThingState'
     )
+    return h
+  }
+
+  let lastMemCheck = 0
+  // 0 = fine, 1 = asked the client to reload, 2 = restarted the browser
+  let lowMemoryStage = 0
+  let lastBrowserRestart = 0
+  // the CarThing restarts itself when it runs out of memory; free some up first
+  const LOW_MEMORY_MB = 40
+  async function checkMemory(device: string) {
+    lastMemCheck = Date.now()
+    const h = await getCarThingHealth(device)
+    if (h.memAvailableMb === null) return
+    if (h.memAvailableMb >= LOW_MEMORY_MB + 20) {
+      lowMemoryStage = 0
+      return
+    }
+    if (h.memAvailableMb >= LOW_MEMORY_MB) return
+    if (lowMemoryStage === 0) {
+      lowMemoryStage = 1
+      log(`CarThing is low on memory (${h.memAvailableMb} MB free); reloading the screen`, 'CarThingState', LogLevel.WARN)
+      serverManager.broadcast('reload', null)
+    } else {
+      // at most one browser restart every 30 minutes
+      if (lowMemoryStage === 2 && Date.now() - lastBrowserRestart < 30 * 60 * 1000) return
+      lowMemoryStage = 2
+      lastBrowserRestart = Date.now()
+      log(`CarThing is still low on memory (${h.memAvailableMb} MB free); restarting its browser`, 'CarThingState', LogLevel.WARN)
+      await restartChromium(device)
+    }
   }
 
   async function carThingStateUpdate() {
@@ -413,9 +444,11 @@ async function setupIpcHandlers() {
             setBrightnessSmooth(found, brightness)
         }
         if (Date.now() - lastHealthLog > 10 * 60 * 1000) await logHealth(found, 'Health')
+        if (Date.now() - lastMemCheck > 2 * 60 * 1000) await checkMemory(found)
       } else {
         // the client lives in the CarThing's /tmp, so it's only missing after the CarThing restarts
         await logHealth(found, 'Client missing, the CarThing has restarted')
+        lowMemoryStage = 0
         const willAutoInstall = getStorageValue('installAutomatically')
         if (willAutoInstall) {
           mainWindow?.webContents.send('carThingState', 'installing')

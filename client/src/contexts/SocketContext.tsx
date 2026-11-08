@@ -93,6 +93,10 @@ const SocketContextProvider = ({
 
     const listener = (e: MessageEvent) => {
       const { type } = JSON.parse(e.data)
+      if (type === 'reload') {
+        window.location.reload()
+        return
+      }
       if (type !== 'pong') return
 
       if (timeoutRef.current) clearTimeout(timeoutRef.current)

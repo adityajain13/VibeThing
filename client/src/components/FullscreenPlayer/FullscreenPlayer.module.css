@@ -22,12 +22,14 @@
 
 .background {
   position: absolute;
-  top: -25%;
-  left: -25%;
-  width: 150%;
-  height: 150%;
+  top: 50%;
+  left: 50%;
+  /* 1/8 of 150% of the screen, blurred, then scaled up 8x: same look, a fraction of the memory */
+  width: 18.75%;
+  height: 18.75%;
   object-fit: cover;
-  filter: blur(60px) saturate(1.7);
+  transform: translate(-50%, -50%) scale(8);
+  filter: blur(7.5px) saturate(1.7);
   opacity: 0.42;
   pointer-events: none;
 }

@@ -162,7 +162,7 @@ export async function findCarThing() {
   return null
 }
 
-async function restartChromium(device: string | null) {
+export async function restartChromium(device: string | null) {
   if (!device) device = await findCarThing()
   if (!device) throw new Error('No valid CarThing found')
 
